@@ -1,24 +1,25 @@
 {
-  "name": "pastry",
-  "version": "0.1.0",
-  "description": "A simple template to build libraries with Bun",
+  "name": "looney",
+  "version": "0.0.1",
+  "description": "Create code animations",
   "keywords": [
     "bun",
     "library",
     "template"
   ],
-  "homepage": "https://github.com/adelrodriguez/pastry#readme",
+  "homepage": "https://github.com/adelrodriguez/looney#readme",
   "bugs": {
-    "url": "https://github.com/adelrodriguez/pastry/issues"
+    "url": "https://github.com/adelrodriguez/looney/issues"
   },
   "license": "MIT",
   "author": "Adel Rodríguez",
   "repository": {
     "type": "git",
-    "url": "https://github.com/adelrodriguez/pastry.git"
+    "url": "git+https://github.com/adelrodriguez/looney.git"
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "type": "module",
   "module": "src/index.ts",
@@ -53,5 +54,11 @@
   "peerDependencies": {
     "typescript": "^5.9.3"
   },
-  "packageManager": "bun@1.3.1"
+  "packageManager": "bun@1.3.1",
+  "dependencies": {
+    "@effect/cli": "0.73.0",
+    "@effect/platform": "0.94.1",
+    "@effect/platform-node": "0.104.0",
+    "effect": "3.19.14"
+  }
 }
