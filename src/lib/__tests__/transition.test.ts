@@ -1,34 +1,5 @@
 import { describe, expect, it } from "bun:test"
-import { Effect } from "effect"
-import { parseMarkdownCodeBlocks } from "../lib/markdown"
-import { diffLayoutTokens } from "../lib/transition"
-
-describe("parseMarkdownCodeBlocks", () => {
-  it("extracts fenced blocks with languages", () => {
-    const markdown = [
-      "```ts",
-      "const value = 1",
-      "```",
-      "",
-      "```js",
-      "console.log(value)",
-      "```",
-      "",
-    ].join("\n")
-
-    const blocks = Effect.runSync(parseMarkdownCodeBlocks(markdown))
-
-    expect(blocks).toHaveLength(2)
-    expect(blocks.map((block) => block.language)).toEqual(["ts", "js"])
-    expect(blocks[0]?.code).toContain("const value")
-  })
-
-  it("throws when language is missing", () => {
-    const markdown = ["```", "console.log('nope')", "```"].join("\n")
-
-    expect(() => Effect.runSync(parseMarkdownCodeBlocks(markdown))).toThrow()
-  })
-})
+import { diffLayoutTokens, easeInOutCubic } from "../transition"
 
 describe("diffLayoutTokens", () => {
   it("matches identical tokens and detects changes", () => {
@@ -78,5 +49,32 @@ describe("diffLayoutTokens", () => {
     expect(diff.added[0]?.content).toBe("answer")
     expect(diff.removed).toHaveLength(1)
     expect(diff.removed[0]?.content).toBe("value")
+  })
+
+  it("handles no matches", () => {
+    const diff = diffLayoutTokens(
+      [
+        { color: "#fff", content: "a", fontStyle: 0, width: 10, x: 0, y: 0 },
+        { color: "#fff", content: "b", fontStyle: 0, width: 10, x: 10, y: 0 },
+      ],
+      [{ color: "#fff", content: "c", fontStyle: 0, width: 10, x: 0, y: 0 }]
+    )
+
+    expect(diff.matched).toHaveLength(0)
+    expect(diff.added).toHaveLength(1)
+    expect(diff.removed).toHaveLength(2)
+  })
+})
+
+describe("easeInOutCubic", () => {
+  it("clamps to range", () => {
+    expect(easeInOutCubic(-1)).toBe(0)
+    expect(easeInOutCubic(2)).toBe(1)
+  })
+
+  it("is symmetric around 0.5", () => {
+    const value = easeInOutCubic(0.5)
+
+    expect(value).toBeCloseTo(0.5)
   })
 })

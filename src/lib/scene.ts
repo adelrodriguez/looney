@@ -1,5 +1,5 @@
 import { Effect } from "effect"
-import { codeToTokens, type BundledLanguage, type BundledTheme } from "shiki"
+import { codeToTokens, type BundledTheme, type ThemedToken } from "shiki"
 import type { CanvasContext } from "./context"
 import type { CodeBlock, LayoutToken, Scene, SceneLayout } from "./types"
 import {
@@ -54,18 +54,35 @@ const measureTokenWidth = (
   return width
 }
 
-export const buildScene = (
-  context: CanvasContext,
-  codeBlock: CodeBlock,
-  theme: BundledTheme,
-  frameWidth: number,
-  frameHeight: number
-) =>
+type MeasuredToken = {
+  color: string
+  content: string
+  fontStyle: number
+  width: number
+}
+
+type MeasuredLine = {
+  tokens: MeasuredToken[]
+  width: number
+}
+
+export type MeasuredScene = {
+  background: string
+  blockHeight: number
+  blockWidth: number
+  contentHeight: number
+  contentWidth: number
+  foreground: string
+  lines: MeasuredLine[]
+  tokens: ThemedToken[][]
+}
+
+export const measureScene = (context: CanvasContext, codeBlock: CodeBlock, theme: BundledTheme) =>
   Effect.tryPromise({
     catch: (error) => (error instanceof Error ? error : new Error(String(error))),
     try: async () => {
       const tokenResult = await codeToTokens(codeBlock.code, {
-        lang: codeBlock.language as BundledLanguage,
+        lang: codeBlock.language,
         theme,
       })
 
@@ -74,12 +91,7 @@ export const buildScene = (
       const background = tokenResult.bg ?? DEFAULT_BACKGROUND
 
       const lineMetrics = tokens.map((lineTokens) => {
-        const metrics: Array<{
-          color: string
-          content: string
-          fontStyle: number
-          width: number
-        }> = []
+        const metrics: MeasuredToken[] = []
         let lineWidth = 0
 
         for (const token of lineTokens) {
@@ -115,41 +127,75 @@ export const buildScene = (
       const contentHeight = tokens.length * DEFAULT_LINE_HEIGHT
       const blockWidth = contentWidth + DEFAULT_PADDING * 2
       const blockHeight = contentHeight + DEFAULT_PADDING * 2
-      const blockX = Math.max(0, Math.round((frameWidth - blockWidth) / 2))
-      const blockY = Math.max(0, Math.round((frameHeight - blockHeight) / 2))
-
-      const layout: SceneLayout = {
-        lines: lineMetrics.map((line, lineIndex) => {
-          let cursorX = blockX + DEFAULT_PADDING
-          const cursorY = blockY + DEFAULT_PADDING + lineIndex * DEFAULT_LINE_HEIGHT
-          const layoutTokens: LayoutToken[] = line.tokens.map((token) => {
-            const layoutToken = {
-              ...token,
-              x: cursorX,
-              y: cursorY,
-            }
-            cursorX += token.width
-            return layoutToken
-          })
-
-          return {
-            tokens: layoutTokens,
-          }
-        }),
-      }
 
       return {
         background,
-        blockX,
-        blockY,
+        blockHeight,
+        blockWidth,
         contentHeight,
         contentWidth,
         foreground,
-        layout,
+        lines: lineMetrics,
         tokens,
-      }
+      } satisfies MeasuredScene
     },
   })
+
+export const resolveFrameSize = (
+  measuredScenes: MeasuredScene[],
+  minWidth: number,
+  minHeight: number
+) => {
+  const maxBlockWidth =
+    measuredScenes.length > 0 ? Math.max(...measuredScenes.map((scene) => scene.blockWidth)) : 0
+  const maxBlockHeight =
+    measuredScenes.length > 0 ? Math.max(...measuredScenes.map((scene) => scene.blockHeight)) : 0
+
+  return {
+    height: Math.max(minHeight, Math.ceil(maxBlockHeight)),
+    width: Math.max(minWidth, Math.ceil(maxBlockWidth)),
+  }
+}
+
+export const layoutScene = (
+  measured: MeasuredScene,
+  frameWidth: number,
+  frameHeight: number
+): Scene => {
+  const blockX = Math.max(0, Math.round((frameWidth - measured.blockWidth) / 2))
+  const blockY = Math.max(0, Math.round((frameHeight - measured.blockHeight) / 2))
+
+  const layout: SceneLayout = {
+    lines: measured.lines.map((line, lineIndex) => {
+      let cursorX = blockX + DEFAULT_PADDING
+      const cursorY = blockY + DEFAULT_PADDING + lineIndex * DEFAULT_LINE_HEIGHT
+      const layoutTokens: LayoutToken[] = line.tokens.map((token) => {
+        const layoutToken = {
+          ...token,
+          x: cursorX,
+          y: cursorY,
+        }
+        cursorX += token.width
+        return layoutToken
+      })
+
+      return {
+        tokens: layoutTokens,
+      }
+    }),
+  }
+
+  return {
+    background: measured.background,
+    blockX,
+    blockY,
+    contentHeight: measured.contentHeight,
+    contentWidth: measured.contentWidth,
+    foreground: measured.foreground,
+    layout,
+    tokens: measured.tokens,
+  }
+}
 
 export const renderSceneText = (
   context: CanvasContext,

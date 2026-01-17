@@ -1,8 +1,8 @@
-import type { ThemedToken } from "shiki"
+import type { BundledLanguage, ThemedToken } from "shiki"
 
 export type CodeBlock = {
   code: string
-  language: string
+  language: BundledLanguage
 }
 
 export type LayoutToken = {
@@ -41,11 +41,6 @@ export type DrawToken = {
   width: number
   x: number
   y: number
-}
-
-export type TokenSequenceItem = {
-  key: string
-  token: LayoutToken
 }
 
 export type TransitionDiff = {

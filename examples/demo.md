@@ -6,21 +6,21 @@ Use these blocks to test different languages.
 
 ```ts
 // TypeScript
-console.log("Hello, world!")
+console.log("sakuga")
 ```
 
 ## JavaScript
 
 ```js
 // JavaScript
-console.log("Hello, world!")
+console.log("sakuga")
 ```
 
 ## Python
 
 ```python
 # Python
-print("Hello, world!")
+print("sakuga")
 ```
 
 ## Go
@@ -32,7 +32,7 @@ package main
 import "fmt"
 
 func main() {
-  fmt.Println("Hello, world!")
+  fmt.Println("sakuga")
 }
 ```
 
@@ -41,7 +41,7 @@ func main() {
 ```rust
 // Rust
 fn main() {
-  println!("Hello, world!")
+  println!("sakuga")
 }
 ```
 
@@ -51,7 +51,7 @@ fn main() {
 // Java
 public class Main {
   public static void main(String[] args) {
-    System.out.println("Hello, world!");
+    System.out.println("sakuga");
   }
 }
 ```
@@ -63,7 +63,7 @@ public class Main {
 #include <stdio.h>
 
 int main(void) {
-  printf("Hello, world!\n");
+  printf("sakuga\n");
   return 0;
 }
 ```
@@ -75,7 +75,7 @@ int main(void) {
 #include <iostream>
 
 int main() {
-  std::cout << "Hello, world!" << std::endl;
+  std::cout << "sakuga" << std::endl;
   return 0;
 }
 ```
@@ -88,7 +88,7 @@ using System;
 
 class Program {
   static void Main() {
-    Console.WriteLine("Hello, world!");
+    Console.WriteLine("sakuga");
   }
 }
 ```
@@ -97,7 +97,7 @@ class Program {
 
 ```ruby
 # Ruby
-puts "Hello, world!"
+puts "sakuga"
 ```
 
 ## PHP
@@ -106,14 +106,14 @@ puts "Hello, world!"
 <?php
 // PHP
 
-echo "Hello, world!";
+echo "sakuga";
 ```
 
 ## Bash
 
 ```bash
 # Bash
-echo "Hello, world!"
+echo "sakuga"
 ```
 
 ## Kotlin
@@ -121,7 +121,7 @@ echo "Hello, world!"
 ```kotlin
 // Kotlin
 fun main() {
-  println("Hello, world!")
+  println("sakuga")
 }
 ```
 
@@ -131,7 +131,7 @@ fun main() {
 // Swift
 import Foundation
 
-print("Hello, world!")
+print("sakuga")
 ```
 
 ## HTML
@@ -145,7 +145,7 @@ print("Hello, world!")
     <title>Hello</title>
   </head>
   <body>
-    Hello, world!
+    sakuga
   </body>
 </html>
 ```

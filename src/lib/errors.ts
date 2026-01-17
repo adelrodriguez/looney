@@ -20,6 +20,11 @@ export class OutputBufferMissing extends Data.TaggedError("OutputBufferMissing")
   reason: string
 }> {}
 
+export class BrowserRenderFailed extends Data.TaggedError("BrowserRenderFailed")<{
+  cause: unknown
+  reason: string
+}> {}
+
 export class UnknownTheme extends Data.TaggedError("UnknownTheme")<{
   theme: string
 }> {}
@@ -30,4 +35,18 @@ export class MissingCodeBlockLanguage extends Data.TaggedError("MissingCodeBlock
 
 export class UnsupportedLanguage extends Data.TaggedError("UnsupportedLanguage")<{
   language: string
+}> {}
+
+export class VideoFrameEncodeFailed extends Data.TaggedError("VideoFrameEncodeFailed")<{
+  cause: unknown
+  reason: string
+}> {}
+
+export class NoCodeBlocksFound extends Data.TaggedError("NoCodeBlocksFound")<{
+  reason: string
+}> {}
+
+export class InvalidTransitionDuration extends Data.TaggedError("InvalidTransitionDuration")<{
+  duration: number
+  reason: string
 }> {}

@@ -1,5 +1,5 @@
 ---
-"pastry": patch
+"sakuga": patch
 ---
 
 Improve template initialization and documentation structure

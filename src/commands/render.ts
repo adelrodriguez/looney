@@ -3,6 +3,7 @@ import * as FileSystem from "@effect/platform/FileSystem"
 import * as Path from "@effect/platform/Path"
 import { Console, Effect } from "effect"
 import { DEFAULT_THEME, DEFAULT_TRANSITION_DURATION_MS } from "../lib/constants"
+import { InvalidTransitionDuration, NoCodeBlocksFound } from "../lib/errors"
 import { parseMarkdownCodeBlocks } from "../lib/markdown"
 import { resolveOutputPath } from "../lib/path"
 import { resolveTheme } from "../lib/theme"
@@ -31,11 +32,14 @@ export default Command.make("render", { file, theme, transition }).pipe(
       const blocks = yield* parseMarkdownCodeBlocks(markdown)
 
       if (blocks.length === 0) {
-        yield* Effect.fail(new Error("No fenced code blocks found."))
+        return yield* new NoCodeBlocksFound({ reason: "No fenced code blocks found." })
       }
 
       if (transition <= 0) {
-        yield* Effect.fail(new Error("Transition duration must be greater than 0."))
+        return yield* new InvalidTransitionDuration({
+          duration: transition,
+          reason: "Transition duration must be greater than 0.",
+        })
       }
 
       const resolvedTheme = yield* resolveTheme(theme)

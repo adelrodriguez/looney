@@ -10,7 +10,9 @@ export const readVersion = () =>
     Effect.gen(function* () {
       const fs = yield* FileSystem.FileSystem
       const path = yield* Path.Path
-      const contents = yield* fs.readFileString(path.join(process.cwd(), "package.json"))
+      const contents = yield* fs.readFileString(
+        path.join(import.meta.dirname, "../..", "package.json")
+      )
       const parsed = yield* Schema.decodeUnknown(Schema.parseJson(PackageJson))(contents)
 
       return parsed.version

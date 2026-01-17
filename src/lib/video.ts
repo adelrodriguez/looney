@@ -18,7 +18,7 @@ import {
   DEFAULT_WIDTH,
 } from "./constants"
 import { buildFramesStream, computeFrameCounts, renderFrame } from "./render"
-import { buildScene } from "./scene"
+import { layoutScene, measureScene, resolveFrameSize } from "./scene"
 import { WebCodecs } from "./webcodecs"
 
 export type RenderVideoOptions = {
@@ -56,17 +56,19 @@ const renderAndWriteFrame =
     output: Output,
     videoSource: VideoSampleSource,
     frameDuration: number,
-    frameIndexRef: Ref.Ref<number>
+    frameIndexRef: Ref.Ref<number>,
+    width: number,
+    height: number
   ) =>
   (frame: RenderFrame) =>
     Effect.gen(function* () {
       const frameIndex = yield* Ref.get(frameIndexRef)
-      renderFrame(context, DEFAULT_WIDTH, DEFAULT_HEIGHT, frame)
+      renderFrame(context, width, height, frame)
 
       const rgba = (context as SKRSContext2D).canvas.data()
       const sample = new VideoSample(rgba, {
-        codedHeight: DEFAULT_HEIGHT,
-        codedWidth: DEFAULT_WIDTH,
+        codedHeight: height,
+        codedWidth: width,
         duration: frameDuration,
         format: "RGBA",
         timestamp: frameIndex * frameDuration,
@@ -75,9 +77,13 @@ const renderAndWriteFrame =
       yield* Effect.tryPromise({
         catch: (error) => (error instanceof Error ? error : new Error(String(error))),
         try: () => videoSource.add(sample),
-      })
-
-      sample.close()
+      }).pipe(
+        Effect.ensuring(
+          Effect.sync(() => {
+            sample.close()
+          })
+        )
+      )
       yield* Ref.set(frameIndexRef, frameIndex + 1)
     })
 
@@ -93,14 +99,22 @@ export const renderVideo = (
     const concurrency = options.concurrency ?? (yield* resolveConcurrency())
     const transitionDurationMs = options.transitionDurationMs ?? DEFAULT_TRANSITION_DURATION_MS
 
-    const canvas = createCanvas(DEFAULT_WIDTH, DEFAULT_HEIGHT)
-    const context = canvas.getContext("2d")
-
-    const scenes = yield* Effect.forEach(
+    const measuredScenes = yield* Effect.forEach(
       codeBlocks,
-      (codeBlock) => buildScene(context, codeBlock, theme as never, DEFAULT_WIDTH, DEFAULT_HEIGHT),
+      (codeBlock) =>
+        Effect.gen(function* () {
+          const measurementContext = createCanvas(1, 1).getContext("2d")
+          return yield* measureScene(measurementContext, codeBlock, theme as never)
+        }),
       { concurrency }
     )
+
+    const { width, height } = resolveFrameSize(measuredScenes, DEFAULT_WIDTH, DEFAULT_HEIGHT)
+
+    const canvas = createCanvas(width, height)
+    const context = canvas.getContext("2d")
+
+    const scenes = measuredScenes.map((measured) => layoutScene(measured, width, height))
 
     const frameCounts = computeFrameCounts(transitionDurationMs)
     const frameIndexRef = yield* Ref.make(0)
@@ -141,7 +155,9 @@ export const renderVideo = (
             output,
             videoSource,
             frameCounts.frameDuration,
-            frameIndexRef
+            frameIndexRef,
+            width,
+            height
           )
         )
 
