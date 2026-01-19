@@ -1,11 +1,9 @@
 import { Effect } from "effect"
 import { codeToTokens, type BundledTheme, type ThemedToken } from "shiki"
 import type { CanvasContext } from "./context"
-import type { CodeBlock, LayoutToken, Scene, SceneLayout } from "./types"
+import type { CodeBlock, LayoutToken, Scene, SceneLayout, TokenCategory } from "./types"
 import {
   DEFAULT_BACKGROUND,
-  DEFAULT_FONT_FAMILY,
-  DEFAULT_FONT_SIZE,
   DEFAULT_FOREGROUND,
   DEFAULT_LINE_HEIGHT,
   DEFAULT_PADDING,
@@ -15,30 +13,10 @@ import {
   FONT_STYLE_UNDERLINE,
   TAB_REPLACEMENT,
 } from "./constants"
+import { buildFont, drawUnderline } from "./text"
+import { categorizeToken } from "./token"
 
-const normalizeTokenContent = (content: string) => content.replaceAll("\t", TAB_REPLACEMENT)
-
-export const buildFont = (isItalic: boolean, isBold: boolean) => {
-  const style = `${isItalic ? "italic " : ""}${isBold ? "bold " : ""}`
-  return `${style}${DEFAULT_FONT_SIZE}px ${DEFAULT_FONT_FAMILY}`
-}
-
-export const drawUnderline = (context: CanvasContext, x: number, y: number, width: number) => {
-  const drawContext = context
-  const previousStrokeStyle = drawContext.strokeStyle
-  const previousLineWidth = drawContext.lineWidth
-  const underlineY = y + DEFAULT_FONT_SIZE + 2
-
-  drawContext.strokeStyle = drawContext.fillStyle
-  drawContext.lineWidth = Math.max(1, Math.floor(DEFAULT_FONT_SIZE / 12))
-  drawContext.beginPath()
-  drawContext.moveTo(x, underlineY)
-  drawContext.lineTo(x + width, underlineY)
-  drawContext.stroke()
-
-  drawContext.strokeStyle = previousStrokeStyle
-  drawContext.lineWidth = previousLineWidth
-}
+const normalizeTokenContent = (content: string) => content.split("\t").join(TAB_REPLACEMENT)
 
 const measureTokenWidth = (
   context: CanvasContext,
@@ -54,7 +32,16 @@ const measureTokenWidth = (
   return width
 }
 
+const resolveTokenCategory = (token: ThemedToken) => {
+  const scopes =
+    token.explanation?.flatMap((explanation) =>
+      explanation.scopes.map((scope) => scope.scopeName)
+    ) ?? []
+  return categorizeToken(scopes)
+}
+
 type MeasuredToken = {
+  category: TokenCategory
   color: string
   content: string
   fontStyle: number
@@ -82,6 +69,7 @@ export const measureScene = (context: CanvasContext, codeBlock: CodeBlock, theme
     catch: (error) => (error instanceof Error ? error : new Error(String(error))),
     try: async () => {
       const tokenResult = await codeToTokens(codeBlock.code, {
+        includeExplanation: "scopeName",
         lang: codeBlock.language,
         theme,
       })
@@ -107,6 +95,7 @@ export const measureScene = (context: CanvasContext, codeBlock: CodeBlock, theme
           const color = token.color ?? foreground
 
           metrics.push({
+            category: resolveTokenCategory(token),
             color,
             content,
             fontStyle: styleFlags,

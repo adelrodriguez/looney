@@ -5,7 +5,20 @@ export type CodeBlock = {
   language: BundledLanguage
 }
 
+export type TokenCategory =
+  | "keyword"
+  | "function"
+  | "type"
+  | "string"
+  | "number"
+  | "comment"
+  | "punctuation"
+  | "operator"
+  | "identifier"
+  | "other"
+
 export type LayoutToken = {
+  category: TokenCategory
   color: string
   content: string
   fontStyle: number

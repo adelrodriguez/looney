@@ -9,13 +9,6 @@ Use these blocks to test different languages.
 console.log("sakuga")
 ```
 
-## JavaScript
-
-```js
-// JavaScript
-console.log("sakuga")
-```
-
 ## Python
 
 ```python
@@ -63,7 +56,7 @@ public class Main {
 #include <stdio.h>
 
 int main(void) {
-  printf("sakuga\n");
+  printf("sakuga");
   return 0;
 }
 ```
@@ -109,13 +102,6 @@ puts "sakuga"
 echo "sakuga";
 ```
 
-## Bash
-
-```bash
-# Bash
-echo "sakuga"
-```
-
 ## Kotlin
 
 ```kotlin
@@ -134,20 +120,11 @@ import Foundation
 print("sakuga")
 ```
 
-## HTML
+## Bash
 
-```html
-<!-- HTML -->
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>Hello</title>
-  </head>
-  <body>
-    sakuga
-  </body>
-</html>
+```bash
+# Bash
+echo "sakuga"
 ```
 
 For a longer TypeScript transition sequence, use `examples/typescript-long.md`.

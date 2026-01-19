@@ -1,44 +1,28 @@
 import { describe, expect, it } from "bun:test"
-import { diffLayoutTokens, easeInOutCubic } from "../transition"
+import type { TokenCategory } from "../types"
+import { categorizeToken } from "../token"
+import { buildTransitionTokens, diffLayoutTokens, easeInOutCubic } from "../transition"
+
+const buildToken = (category: TokenCategory, content: string, x: number) => ({
+  category,
+  color: "#fff",
+  content,
+  fontStyle: 0,
+  width: 10,
+  x,
+  y: 0,
+})
 
 describe("diffLayoutTokens", () => {
   it("matches identical tokens and detects changes", () => {
     const fromTokens = [
-      {
-        color: "#fff",
-        content: "const",
-        fontStyle: 0,
-        width: 40,
-        x: 0,
-        y: 0,
-      },
-      {
-        color: "#fff",
-        content: "value",
-        fontStyle: 0,
-        width: 50,
-        x: 40,
-        y: 0,
-      },
+      { ...buildToken("keyword", "const", 0), width: 40 },
+      { ...buildToken("identifier", "value", 40), width: 50 },
     ]
 
     const toTokens = [
-      {
-        color: "#fff",
-        content: "const",
-        fontStyle: 0,
-        width: 40,
-        x: 0,
-        y: 0,
-      },
-      {
-        color: "#fff",
-        content: "answer",
-        fontStyle: 0,
-        width: 60,
-        x: 40,
-        y: 0,
-      },
+      { ...buildToken("keyword", "const", 0), width: 40 },
+      { ...buildToken("number", "42", 40), width: 20 },
     ]
 
     const diff = diffLayoutTokens(fromTokens, toTokens)
@@ -46,23 +30,69 @@ describe("diffLayoutTokens", () => {
     expect(diff.matched).toHaveLength(1)
     expect(diff.matched[0]?.from.content).toBe("const")
     expect(diff.added).toHaveLength(1)
-    expect(diff.added[0]?.content).toBe("answer")
+    expect(diff.added[0]?.content).toBe("42")
     expect(diff.removed).toHaveLength(1)
     expect(diff.removed[0]?.content).toBe("value")
   })
 
   it("handles no matches", () => {
     const diff = diffLayoutTokens(
-      [
-        { color: "#fff", content: "a", fontStyle: 0, width: 10, x: 0, y: 0 },
-        { color: "#fff", content: "b", fontStyle: 0, width: 10, x: 10, y: 0 },
-      ],
-      [{ color: "#fff", content: "c", fontStyle: 0, width: 10, x: 0, y: 0 }]
+      [buildToken("identifier", "a", 0), buildToken("identifier", "b", 10)],
+      [buildToken("comment", "c", 0)]
     )
 
     expect(diff.matched).toHaveLength(0)
     expect(diff.added).toHaveLength(1)
     expect(diff.removed).toHaveLength(2)
+  })
+
+  it("matches by category when content differs", () => {
+    const diff = diffLayoutTokens(
+      [buildToken("keyword", "int", 0), buildToken("function", "main", 40)],
+      [buildToken("keyword", "void", 0), buildToken("function", "Main", 40)]
+    )
+
+    expect(diff.matched).toHaveLength(2)
+    expect(diff.added).toHaveLength(0)
+    expect(diff.removed).toHaveLength(0)
+  })
+
+  it("prefers exact content matches after LCS", () => {
+    const fromTokens = [buildToken("string", "<iostream>", 0), buildToken("string", '"sakuga"', 40)]
+    const toTokens = [buildToken("string", '"sakuga"', 0)]
+
+    const diff = diffLayoutTokens(fromTokens, toTokens)
+
+    expect(diff.matched).toHaveLength(1)
+    expect(diff.matched[0]?.from.content).toBe('"sakuga"')
+    expect(diff.matched[0]?.to.content).toBe('"sakuga"')
+    expect(diff.removed).toHaveLength(1)
+    expect(diff.removed[0]?.content).toBe("<iostream>")
+  })
+
+  it("crossfades mismatched matches", () => {
+    const diff = diffLayoutTokens(
+      [buildToken("keyword", "int", 0), buildToken("function", "main", 40)],
+      [buildToken("keyword", "void", 0), buildToken("function", "Main", 40)]
+    )
+
+    const tokens = buildTransitionTokens(diff, 0.5)
+    const contents = tokens.map((token) => token.content)
+
+    expect(contents).toContain("int")
+    expect(contents).toContain("void")
+    expect(contents).toContain("main")
+    expect(contents).toContain("Main")
+  })
+
+  it("prioritizes string scopes over punctuation", () => {
+    const category = categorizeToken([
+      "source.cpp",
+      "string.quoted.double.cpp",
+      "punctuation.definition.string.begin.cpp",
+    ])
+
+    expect(category).toBe("string")
   })
 })
 

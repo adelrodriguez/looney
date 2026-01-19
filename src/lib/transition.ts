@@ -7,22 +7,40 @@ import {
   FONT_STYLE_ITALIC,
   FONT_STYLE_UNDERLINE,
 } from "./constants"
-import { buildFont as buildSceneFont, drawUnderline } from "./scene"
+import { buildFont, drawUnderline } from "./text"
 
-const buildTokenKey = (token: LayoutToken) => `${token.content}::${token.fontStyle}`
+const buildExactKey = (token: LayoutToken) => `exact::${token.content}::${token.fontStyle}`
+const buildCategoryKey = (token: LayoutToken) => `category::${token.category}`
 
-const buildTokenSequence = (tokens: LayoutToken[]) =>
+const buildTokenSequence = (tokens: LayoutToken[], buildKey: (token: LayoutToken) => string) =>
   tokens.map((token) => ({
-    key: buildTokenKey(token),
+    key: buildKey(token),
     token,
   }))
 
-export const flattenSceneTokens = (scene: Scene) =>
-  scene.layout.lines.flatMap((line) => line.tokens)
+type TokenWithIndex = {
+  index: number
+  token: LayoutToken
+}
 
-export const diffLayoutTokens = (fromTokens: LayoutToken[], toTokens: LayoutToken[]) => {
-  const fromItems = buildTokenSequence(fromTokens)
-  const toItems = buildTokenSequence(toTokens)
+const groupByKey = (tokens: LayoutToken[], buildKey: (token: LayoutToken) => string) => {
+  const grouped = new Map<string, TokenWithIndex[]>()
+  tokens.forEach((token, index) => {
+    const key = buildKey(token)
+    const group = grouped.get(key) ?? []
+    group.push({ index, token })
+    grouped.set(key, group)
+  })
+  return grouped
+}
+
+const diffByKey = (
+  fromTokens: LayoutToken[],
+  toTokens: LayoutToken[],
+  buildKey: (token: LayoutToken) => string
+) => {
+  const fromItems = buildTokenSequence(fromTokens, buildKey)
+  const toItems = buildTokenSequence(toTokens, buildKey)
   const fromKeys = fromItems.map((item) => item.key)
   const toKeys = toItems.map((item) => item.key)
   const matrix = Array.from({ length: fromKeys.length + 1 }, () =>
@@ -95,6 +113,117 @@ export const diffLayoutTokens = (fromTokens: LayoutToken[], toTokens: LayoutToke
   }
 }
 
+const matchByCategory = (removed: LayoutToken[], added: LayoutToken[]) => {
+  const matched: Array<{ from: LayoutToken; to: LayoutToken }> = []
+  const usedFrom = new Set<number>()
+  const usedTo = new Set<number>()
+  const removedByCategory = groupByKey(removed, buildCategoryKey)
+  const addedByCategory = groupByKey(added, buildCategoryKey)
+
+  for (const [categoryKey, fromGroup] of removedByCategory) {
+    const toGroup = addedByCategory.get(categoryKey) ?? []
+
+    for (const fromEntry of fromGroup) {
+      if (usedFrom.has(fromEntry.index)) {
+        continue
+      }
+
+      let bestMatch: TokenWithIndex | null = null
+      let bestDistance = Infinity
+
+      for (const toEntry of toGroup) {
+        if (usedTo.has(toEntry.index)) {
+          continue
+        }
+
+        const distance =
+          Math.abs(fromEntry.token.y - toEntry.token.y) * 1000 +
+          Math.abs(fromEntry.token.x - toEntry.token.x)
+
+        if (distance < bestDistance) {
+          bestDistance = distance
+          bestMatch = toEntry
+        }
+      }
+
+      if (bestMatch) {
+        matched.push({ from: fromEntry.token, to: bestMatch.token })
+        usedFrom.add(fromEntry.index)
+        usedTo.add(bestMatch.index)
+      }
+    }
+  }
+
+  return {
+    matched,
+    stillAdded: added.filter((_, index) => !usedTo.has(index)),
+    stillRemoved: removed.filter((_, index) => !usedFrom.has(index)),
+  }
+}
+
+const matchByExactContent = (removed: LayoutToken[], added: LayoutToken[]) => {
+  const matched: Array<{ from: LayoutToken; to: LayoutToken }> = []
+  const usedFrom = new Set<number>()
+  const usedTo = new Set<number>()
+  const removedByContent = groupByKey(removed, buildExactKey)
+  const addedByContent = groupByKey(added, buildExactKey)
+
+  for (const [contentKey, fromGroup] of removedByContent) {
+    const toGroup = addedByContent.get(contentKey) ?? []
+
+    for (const fromEntry of fromGroup) {
+      if (usedFrom.has(fromEntry.index)) {
+        continue
+      }
+
+      let bestMatch: TokenWithIndex | null = null
+      let bestDistance = Infinity
+
+      for (const toEntry of toGroup) {
+        if (usedTo.has(toEntry.index)) {
+          continue
+        }
+
+        const distance =
+          Math.abs(fromEntry.token.y - toEntry.token.y) * 1000 +
+          Math.abs(fromEntry.token.x - toEntry.token.x)
+
+        if (distance < bestDistance) {
+          bestDistance = distance
+          bestMatch = toEntry
+        }
+      }
+
+      if (bestMatch) {
+        matched.push({ from: fromEntry.token, to: bestMatch.token })
+        usedFrom.add(fromEntry.index)
+        usedTo.add(bestMatch.index)
+      }
+    }
+  }
+
+  return {
+    matched,
+    stillAdded: added.filter((_, index) => !usedTo.has(index)),
+    stillRemoved: removed.filter((_, index) => !usedFrom.has(index)),
+  }
+}
+
+export const flattenSceneTokens = (scene: Scene) =>
+  scene.layout.lines.flatMap((line) => line.tokens)
+
+export const diffLayoutTokens = (fromTokens: LayoutToken[], toTokens: LayoutToken[]) => {
+  const exactDiff = diffByKey(fromTokens, toTokens, buildExactKey)
+  const contentMatches = matchByExactContent(exactDiff.removed, exactDiff.added)
+  const categoryMatches = matchByCategory(contentMatches.stillRemoved, contentMatches.stillAdded)
+
+  return {
+    added: categoryMatches.stillAdded,
+    matched: [...exactDiff.matched, ...contentMatches.matched, ...categoryMatches.matched],
+    removed: categoryMatches.stillRemoved,
+  }
+}
+
 export const buildTransitionDiff = (fromScene: Scene, toScene: Scene) =>
   diffLayoutTokens(flattenSceneTokens(fromScene), flattenSceneTokens(toScene))
 
@@ -125,14 +254,49 @@ export const buildTransitionTokens = (diff: TransitionDiff, progress: number) =>
   }
 
   for (const match of diff.matched) {
+    const width = lerp(match.from.width, match.to.width, clamped)
+    const x = lerp(match.from.x, match.to.x, clamped)
+    const y = lerp(match.from.y, match.to.y, clamped)
+    const hasMismatch =
+      match.from.content !== match.to.content || match.from.fontStyle !== match.to.fontStyle
+
+    if (hasMismatch) {
+      const fromOpacity = 1 - clamped
+      if (fromOpacity > 0) {
+        tokens.push({
+          color: match.from.color,
+          content: match.from.content,
+          fontStyle: match.from.fontStyle,
+          opacity: fromOpacity,
+          width,
+          x,
+          y,
+        })
+      }
+
+      const toOpacity = clamped
+      if (toOpacity > 0) {
+        tokens.push({
+          color: match.to.color,
+          content: match.to.content,
+          fontStyle: match.to.fontStyle,
+          opacity: toOpacity,
+          width,
+          x,
+          y,
+        })
+      }
+      continue
+    }
+
     tokens.push({
       color: blendColors(match.from.color, match.to.color, clamped),
       content: match.to.content,
       fontStyle: match.to.fontStyle,
       opacity: 1,
-      width: lerp(match.from.width, match.to.width, clamped),
-      x: lerp(match.from.x, match.to.x, clamped),
-      y: lerp(match.from.y, match.to.y, clamped),
+      width,
+      x,
+      y,
     })
   }
 
@@ -178,7 +342,7 @@ export const renderTransitionTokens = (context: CanvasContext, tokens: DrawToken
     const isUnderline = (fontStyle & FONT_STYLE_UNDERLINE) === FONT_STYLE_UNDERLINE
 
     textContext.globalAlpha = token.opacity
-    textContext.font = buildSceneFont(isItalic, isBold)
+    textContext.font = buildFont(isItalic, isBold)
     textContext.fillStyle = token.color
     textContext.fillText(token.content, token.x, token.y)
 
