@@ -10,6 +10,21 @@
 
 <video src="examples/demo.mp4" controls></video>
 
+## How To Use
+
+Create a Markdown file with fenced code blocks, then run:
+
+```bash
+bunx sakuga render examples/demo.md
+```
+
+This writes `examples/demo.mp4` next to the input file.
+
+### Options
+
+- `--theme`, `-t`: Shiki theme for syntax highlighting (default: `github-dark`).
+- `--transition`, `-tr`: Transition duration between slides in milliseconds (default: `800`).
+
 ## Performance
 
 ### Concurrency
