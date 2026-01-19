@@ -17,43 +17,40 @@ export const normalizeLanguage = (rawLanguage: string) => {
 const isSupportedLanguage = (language: string): language is BundledLanguage =>
   Object.hasOwn(bundledLanguages, language)
 
-export const parseMarkdownCodeBlocks = (markdown: string) =>
-  Effect.gen(function* () {
-    const tokens = yield* Effect.try({
-      catch: () => new MissingCodeBlockLanguage({ reason: "Unable to parse markdown." }),
-      try: () => marked.lexer(markdown),
-    })
-    const blocks: CodeBlock[] = []
+export const parseMarkdownCodeBlocks = Effect.fn(function* parseMarkdownCodeBlocks(
+  markdown: string
+) {
+  const tokens = yield* Effect.try({
+    catch: () => new MissingCodeBlockLanguage({ reason: "Unable to parse markdown." }),
+    try: () => marked.lexer(markdown),
+  })
+  const blocks: CodeBlock[] = []
 
-    for (const token of tokens) {
-      if (token.type !== "code") {
-        continue
-      }
+  for (const token of tokens) {
+    if (token.type !== "code") {
+      continue
+    }
 
-      const rawLanguage = typeof token.lang === "string" ? token.lang.trim() : ""
-      const language = normalizeLanguage(rawLanguage)
+    const rawLanguage = typeof token.lang === "string" ? token.lang.trim() : ""
+    const language = normalizeLanguage(rawLanguage)
 
-      if (!language) {
-        return yield* Effect.fail(
-          new MissingCodeBlockLanguage({
-            reason: "Every fenced code block needs a language (for example: ```ts).",
-          })
-        )
-      }
-
-      if (!isSupportedLanguage(language)) {
-        return yield* Effect.fail(
-          new UnsupportedLanguage({
-            language: rawLanguage,
-          })
-        )
-      }
-
-      blocks.push({
-        code: token.text,
-        language,
+    if (!language) {
+      return yield* new MissingCodeBlockLanguage({
+        reason: "Every fenced code block needs a language (for example: ```ts).",
       })
     }
 
-    return blocks
-  })
+    if (!isSupportedLanguage(language)) {
+      return yield* new UnsupportedLanguage({
+        language: rawLanguage,
+      })
+    }
+
+    blocks.push({
+      code: token.text,
+      language,
+    })
+  }
+
+  return blocks
+})

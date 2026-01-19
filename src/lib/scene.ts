@@ -13,6 +13,7 @@ import {
   FONT_STYLE_UNDERLINE,
   TAB_REPLACEMENT,
 } from "./constants"
+import { SceneMeasureFailed } from "./errors"
 import { buildFont, drawUnderline } from "./text"
 import { categorizeToken } from "./token"
 
@@ -64,9 +65,17 @@ export type MeasuredScene = {
   tokens: ThemedToken[][]
 }
 
-export const measureScene = (context: CanvasContext, codeBlock: CodeBlock, theme: BundledTheme) =>
-  Effect.tryPromise({
-    catch: (error) => (error instanceof Error ? error : new Error(String(error))),
+export const measureScene = Effect.fn(function* measureScene(
+  context: CanvasContext,
+  codeBlock: CodeBlock,
+  theme: BundledTheme
+) {
+  return yield* Effect.tryPromise({
+    catch: (cause: unknown) =>
+      new SceneMeasureFailed({
+        cause,
+        reason: "Unable to measure scene tokens.",
+      }),
     try: async () => {
       const tokenResult = await codeToTokens(codeBlock.code, {
         includeExplanation: "scopeName",
@@ -129,6 +138,7 @@ export const measureScene = (context: CanvasContext, codeBlock: CodeBlock, theme
       } satisfies MeasuredScene
     },
   })
+})
 
 export const resolveFrameSize = (
   measuredScenes: MeasuredScene[],

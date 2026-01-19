@@ -15,7 +15,7 @@ type WebCodecsConstructors = {
 }
 
 export type WebCodecsService = WebCodecsConstructors & {
-  readonly toVideoFrame: (sample: VideoSample) => Effect.Effect<VideoFrame, Error>
+  readonly toVideoFrame: (sample: VideoSample) => Effect.Effect<VideoFrame, VideoFrameEncodeFailed>
   readonly registerNodeVideoEncoder: () => Effect.Effect<void>
 }
 
@@ -53,7 +53,7 @@ const requireWebCodecs = (globals: WebCodecsGlobals, reason: string) => {
   return globals as WebCodecsConstructors
 }
 
-const browserWebCodecs: Effect.Effect<WebCodecsConstructors, WebCodecsUnavailable> = Effect.try({
+const browserWebCodecs = Effect.try({
   catch: (error: unknown) => {
     if (error instanceof WebCodecsUnavailable) {
       return error
@@ -106,7 +106,11 @@ const toVideoFramePromise = async (sample: VideoSample, codecs: WebCodecsConstru
 
 const toVideoFrameEffect = (sample: VideoSample, codecs: WebCodecsConstructors) =>
   Effect.tryPromise({
-    catch: (error) => (error instanceof Error ? error : new Error(String(error))),
+    catch: (cause: unknown) =>
+      new VideoFrameEncodeFailed({
+        cause,
+        reason: "Unable to create video frame for encoding.",
+      }),
     try: () => toVideoFramePromise(sample, codecs),
   })
 
@@ -245,11 +249,11 @@ const makeWebCodecsService = (
   codecs: WebCodecsConstructors,
   registerEffect: Effect.Effect<void>
 ): WebCodecsService => {
-  const toVideoFrame = Effect.fn("WebCodecs.toVideoFrame")(function* (sample: VideoSample) {
+  const toVideoFrame = Effect.fn(function* toVideoFrame(sample: VideoSample) {
     return yield* toVideoFrameEffect(sample, codecs)
   })
 
-  const registerNodeVideoEncoder = Effect.fn("WebCodecs.registerNodeVideoEncoder")(function* () {
+  const registerNodeVideoEncoder = Effect.fn(function* registerNodeVideoEncoder() {
     yield* registerEffect
   })
 
@@ -260,45 +264,25 @@ const makeWebCodecsService = (
   })
 }
 
-const makeBrowserService = () =>
-  Effect.gen(function* () {
-    const codecs = yield* browserWebCodecs
-    return makeWebCodecsService(codecs, Effect.void)
-  }).pipe(
-    Effect.mapError((error: unknown) => {
-      if (error instanceof WebCodecsUnavailable) {
-        return error
-      }
+const makeBrowserService = Effect.fn(function* makeBrowserService() {
+  const codecs = yield* browserWebCodecs
+  return makeWebCodecsService(codecs, Effect.void)
+})
 
-      const message = error instanceof Error ? error.message : String(error)
-      const isMissingLibrary = message.includes("Library not loaded")
-      const baseMessage = "WebCodecs not available."
-      const detailMessage = isMissingLibrary
-        ? "Install FFmpeg (brew install ffmpeg) and ensure libavcodec is available."
-        : "Install node-webcodecs plus FFmpeg (brew install ffmpeg pkg-config)."
+const makeNodeService = Effect.fn(function* makeNodeService() {
+  const codecs = yield* resolveNodeWebCodecs
+  const register = registerNodeVideoEncoder(codecs)
+  yield* register
+  return makeWebCodecsService(codecs, register)
+})
 
-      return new WebCodecsUnavailable({
-        reason: `${baseMessage} ${detailMessage}`,
-      })
-    })
-  )
+const makeAutoService = Effect.fn(function* makeAutoService() {
+  if (isBrowserRuntime()) {
+    return yield* makeBrowserService()
+  }
 
-const makeNodeService = () =>
-  Effect.gen(function* () {
-    const codecs = yield* resolveNodeWebCodecs
-    const register = registerNodeVideoEncoder(codecs)
-    yield* register
-    return makeWebCodecsService(codecs, register)
-  })
-
-const makeAutoService = () =>
-  Effect.gen(function* () {
-    if (isBrowserRuntime()) {
-      return yield* makeBrowserService()
-    }
-
-    return yield* makeNodeService()
-  })
+  return yield* makeNodeService()
+})
 
 export const webCodecsBrowserLayer = Layer.effect(WebCodecs, makeBrowserService())
 export const webCodecsNodeLayer = Layer.effect(WebCodecs, makeNodeService())

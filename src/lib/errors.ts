@@ -25,6 +25,16 @@ export class BrowserRenderFailed extends Data.TaggedError("BrowserRenderFailed")
   reason: string
 }> {}
 
+export class SceneMeasureFailed extends Data.TaggedError("SceneMeasureFailed")<{
+  cause: unknown
+  reason: string
+}> {}
+
+export class VideoRenderFailed extends Data.TaggedError("VideoRenderFailed")<{
+  cause: unknown
+  reason: string
+}> {}
+
 export class UnknownTheme extends Data.TaggedError("UnknownTheme")<{
   theme: string
 }> {}

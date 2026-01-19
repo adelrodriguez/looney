@@ -24,8 +24,6 @@ export const render = (options: RenderOptions) =>
       const resolvedTheme = yield* resolveTheme(theme)
       const blocks = yield* parseMarkdownCodeBlocks(markdown)
 
-      const result = yield* renderVideoBrowser(resolvedTheme, blocks, browserOptions)
-
-      return result
+      return yield* renderVideoBrowser(resolvedTheme, blocks, browserOptions)
     }).pipe(Effect.provide(WebCodecs.browser))
   )
