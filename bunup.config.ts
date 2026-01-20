@@ -2,7 +2,7 @@ import { defineConfig } from "bunup"
 
 export default defineConfig([
   {
-    entry: ["src/cli.ts"],
+    entry: ["src/index.ts"],
     format: "esm",
     name: "cli",
     outDir: "dist",
