@@ -4,13 +4,13 @@ import { UnknownTheme } from "../errors"
 import { resolveTheme } from "../theme"
 
 describe("resolveTheme", () => {
-  it("returns theme when supported", () => {
+  it("should return theme when supported", () => {
     const result = Effect.runSync(resolveTheme("github-dark"))
 
     expect(result).toBe("github-dark")
   })
 
-  it("fails when theme is unknown", () => {
+  it("should fail when theme is unknown", () => {
     const exit = Effect.runSyncExit(resolveTheme("not-a-theme"))
 
     expect(exit._tag).toBe("Failure")

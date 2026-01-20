@@ -49,21 +49,21 @@ const createContext = () => {
 }
 
 describe("buildFont", () => {
-  it("builds the default font string", () => {
+  it("should build the default font string", () => {
     expect(buildFont(false, false)).toBe(`${DEFAULT_FONT_SIZE}px ${DEFAULT_FONT_FAMILY}`)
   })
 
-  it("adds italic and bold styles", () => {
+  it("should add italic and bold styles", () => {
     expect(buildFont(true, true)).toBe(`italic bold ${DEFAULT_FONT_SIZE}px ${DEFAULT_FONT_FAMILY}`)
   })
 
-  it("handles italic-only styles", () => {
+  it("should handle italic-only styles", () => {
     expect(buildFont(true, false)).toBe(`italic ${DEFAULT_FONT_SIZE}px ${DEFAULT_FONT_FAMILY}`)
   })
 })
 
 describe("drawUnderline", () => {
-  it("draws underline with computed style and restores context", () => {
+  it("should draw underline with computed style and restore context", () => {
     const { calls, context } = createContext()
     const x = 10
     const y = 20

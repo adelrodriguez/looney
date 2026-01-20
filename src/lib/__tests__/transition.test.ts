@@ -14,7 +14,7 @@ const buildToken = (category: TokenCategory, content: string, x: number) => ({
 })
 
 describe("diffLayoutTokens", () => {
-  it("matches identical tokens and detects changes", () => {
+  it("should match identical tokens and detect changes", () => {
     const fromTokens = [
       { ...buildToken("keyword", "const", 0), width: 40 },
       { ...buildToken("identifier", "value", 40), width: 50 },
@@ -35,7 +35,7 @@ describe("diffLayoutTokens", () => {
     expect(diff.removed[0]?.content).toBe("value")
   })
 
-  it("handles no matches", () => {
+  it("should handle no matches", () => {
     const diff = diffLayoutTokens(
       [buildToken("identifier", "a", 0), buildToken("identifier", "b", 10)],
       [buildToken("comment", "c", 0)]
@@ -46,7 +46,7 @@ describe("diffLayoutTokens", () => {
     expect(diff.removed).toHaveLength(2)
   })
 
-  it("matches by category when content differs", () => {
+  it("should match by category when content differs", () => {
     const diff = diffLayoutTokens(
       [buildToken("keyword", "int", 0), buildToken("function", "main", 40)],
       [buildToken("keyword", "void", 0), buildToken("function", "Main", 40)]
@@ -57,7 +57,7 @@ describe("diffLayoutTokens", () => {
     expect(diff.removed).toHaveLength(0)
   })
 
-  it("prefers exact content matches after LCS", () => {
+  it("should prefer exact content matches after LCS", () => {
     const fromTokens = [buildToken("string", "<iostream>", 0), buildToken("string", '"sakuga"', 40)]
     const toTokens = [buildToken("string", '"sakuga"', 0)]
 
@@ -70,7 +70,7 @@ describe("diffLayoutTokens", () => {
     expect(diff.removed[0]?.content).toBe("<iostream>")
   })
 
-  it("crossfades mismatched matches", () => {
+  it("should crossfade mismatched matches", () => {
     const diff = diffLayoutTokens(
       [buildToken("keyword", "int", 0), buildToken("function", "main", 40)],
       [buildToken("keyword", "void", 0), buildToken("function", "Main", 40)]
@@ -85,7 +85,7 @@ describe("diffLayoutTokens", () => {
     expect(contents).toContain("Main")
   })
 
-  it("prioritizes string scopes over punctuation", () => {
+  it("should prioritize string scopes over punctuation", () => {
     const category = categorizeToken([
       "source.cpp",
       "string.quoted.double.cpp",
@@ -97,12 +97,12 @@ describe("diffLayoutTokens", () => {
 })
 
 describe("easeInOutCubic", () => {
-  it("clamps to range", () => {
+  it("should clamp to range", () => {
     expect(easeInOutCubic(-1)).toBe(0)
     expect(easeInOutCubic(2)).toBe(1)
   })
 
-  it("is symmetric around 0.5", () => {
+  it("should be symmetric around 0.5", () => {
     const value = easeInOutCubic(0.5)
 
     expect(value).toBeCloseTo(0.5)

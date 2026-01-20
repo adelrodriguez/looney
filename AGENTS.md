@@ -29,6 +29,7 @@ Never guess at Effect patterns - check the guide first.
 ## Coding Style
 
 - Prefer inline error creation over helper functions. Do not create `toSomeError()` helper functions to convert errors - inline the error construction at each usage site instead.
+- Do not use the global `Error` class - use Effect's `Data.TaggedError` instead.
 
 ## Changesets
 

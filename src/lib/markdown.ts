@@ -34,19 +34,15 @@ export const parseMarkdownCodeBlocks = (markdown: string) =>
       const language = normalizeLanguage(rawLanguage)
 
       if (!language) {
-        return yield* Effect.fail(
-          new MissingCodeBlockLanguage({
-            reason: "Every fenced code block needs a language (for example: ```ts).",
-          })
-        )
+        return yield* new MissingCodeBlockLanguage({
+          reason: "Every fenced code block needs a language (for example: ```ts).",
+        })
       }
 
       if (!isSupportedLanguage(language)) {
-        return yield* Effect.fail(
-          new UnsupportedLanguage({
-            language: rawLanguage,
-          })
-        )
+        return yield* new UnsupportedLanguage({
+          language: rawLanguage,
+        })
       }
 
       blocks.push({

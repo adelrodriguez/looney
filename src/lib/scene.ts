@@ -13,6 +13,7 @@ import {
   FONT_STYLE_UNDERLINE,
   TAB_REPLACEMENT,
 } from "./constants"
+import { SceneMeasureFailed } from "./errors"
 import { buildFont, drawUnderline } from "./text"
 import { categorizeToken } from "./token"
 
@@ -66,7 +67,11 @@ export type MeasuredScene = {
 
 export const measureScene = (context: CanvasContext, codeBlock: CodeBlock, theme: BundledTheme) =>
   Effect.tryPromise({
-    catch: (error) => (error instanceof Error ? error : new Error(String(error))),
+    catch: (cause) =>
+      new SceneMeasureFailed({
+        cause,
+        reason: "Unable to tokenize scene code block.",
+      }),
     try: async () => {
       const tokenResult = await codeToTokens(codeBlock.code, {
         includeExplanation: "scopeName",

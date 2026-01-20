@@ -15,7 +15,7 @@ type WebCodecsConstructors = {
 }
 
 export type WebCodecsService = WebCodecsConstructors & {
-  readonly toVideoFrame: (sample: VideoSample) => Effect.Effect<VideoFrame, Error>
+  readonly toVideoFrame: (sample: VideoSample) => Effect.Effect<VideoFrame, VideoFrameEncodeFailed>
   readonly registerNodeVideoEncoder: () => Effect.Effect<void>
 }
 
@@ -82,11 +82,17 @@ let nodeEncoderRegistered = false
 const toVideoFramePromise = async (sample: VideoSample, codecs: WebCodecsConstructors) => {
   const format = sample.format
   if (!format) {
-    throw new Error("Video sample format is required for encoding.")
+    throw new VideoFrameEncodeFailed({
+      cause: "Video sample format missing.",
+      reason: "Video sample format is required for encoding.",
+    })
   }
 
   if (format !== "RGBA" && format !== "RGBX" && format !== "BGRA" && format !== "BGRX") {
-    throw new Error(`Unsupported pixel format for node encoder: ${format}.`)
+    throw new VideoFrameEncodeFailed({
+      cause: format,
+      reason: `Unsupported pixel format for node encoder: ${format}.`,
+    })
   }
 
   const data = new Uint8Array(sample.allocationSize({ format }))
@@ -106,7 +112,11 @@ const toVideoFramePromise = async (sample: VideoSample, codecs: WebCodecsConstru
 
 const toVideoFrameEffect = (sample: VideoSample, codecs: WebCodecsConstructors) =>
   Effect.tryPromise({
-    catch: (error) => (error instanceof Error ? error : new Error(String(error))),
+    catch: (cause) =>
+      new VideoFrameEncodeFailed({
+        cause,
+        reason: "Unable to create VideoFrame from sample.",
+      }),
     try: () => toVideoFramePromise(sample, codecs),
   })
 
@@ -123,9 +133,10 @@ const makeNodeVideoEncoder = (codecs: WebCodecsConstructors) => {
       if (typeof codecs.VideoEncoder.isConfigSupported === "function") {
         const support = await codecs.VideoEncoder.isConfigSupported(this.config)
         if (!support.supported) {
-          throw new Error(
-            `This specific encoder configuration (${this.config.codec}, ${this.config.width}x${this.config.height}) is not supported.`
-          )
+          throw new VideoFrameEncodeFailed({
+            cause: support,
+            reason: `This specific encoder configuration (${this.config.codec}, ${this.config.width}x${this.config.height}) is not supported.`,
+          })
         }
       }
 
@@ -187,7 +198,10 @@ const makeNodeVideoEncoder = (codecs: WebCodecsConstructors) => {
 
     private ensureEncoder() {
       if (!this.encoder) {
-        throw new Error("Video encoder not initialized.")
+        throw new VideoFrameEncodeFailed({
+          cause: "Video encoder missing",
+          reason: "Video encoder not initialized.",
+        })
       }
     }
 

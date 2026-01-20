@@ -5,9 +5,8 @@ import { Console, Effect } from "effect"
 import { DEFAULT_THEME, DEFAULT_TRANSITION_DURATION_MS } from "../lib/constants"
 import { InvalidTransitionDuration, NoCodeBlocksFound } from "../lib/errors"
 import { parseMarkdownCodeBlocks } from "../lib/markdown"
-import { resolveOutputPath } from "../lib/path"
+import { renderVideo } from "../lib/render/node"
 import { resolveTheme } from "../lib/theme"
-import { renderVideo } from "../lib/video"
 
 const file = Args.file({ exists: "yes", name: "file" })
 const theme = Options.text("theme").pipe(
@@ -26,7 +25,7 @@ export default Command.make("render", { file, theme, transition }).pipe(
   Command.withHandler(({ file, theme, transition }) =>
     Effect.gen(function* () {
       const fileSystem = yield* FileSystem.FileSystem
-      const pathService = yield* Path.Path
+      const path = yield* Path.Path
 
       const markdown = yield* fileSystem.readFileString(file)
       const blocks = yield* parseMarkdownCodeBlocks(markdown)
@@ -43,9 +42,11 @@ export default Command.make("render", { file, theme, transition }).pipe(
       }
 
       const resolvedTheme = yield* resolveTheme(theme)
-      const outputPath = resolveOutputPath(pathService, file)
+      const parsed = path.parse(file)
+      const outputPath = path.join(parsed.dir, `${parsed.name}.mp4`)
 
       yield* Console.log(`Rendering ${blocks.length} code blocks...`)
+
       yield* renderVideo(outputPath, resolvedTheme, blocks, {
         transitionDurationMs: transition,
       })
