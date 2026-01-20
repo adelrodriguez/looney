@@ -1,4 +1,5 @@
 import { availableParallelism } from "node:os"
+import type { BundledTheme } from "shiki"
 import { createCanvas, type SKRSContext2D } from "@napi-rs/canvas"
 import { Effect, Stream } from "effect"
 import type { CanvasContext } from "./context"
@@ -21,8 +22,6 @@ export type RenderVideoOptions = {
   fps?: number
 }
 
-const resolveConcurrency = () => Effect.sync(() => Math.min(4, availableParallelism()))
-
 const frameToBytes = (context: CanvasContext, width: number, height: number) =>
   Effect.fn("renderVideo.frameToBytes")((frame: RenderFrame) =>
     Effect.sync(() => {
@@ -34,13 +33,13 @@ const frameToBytes = (context: CanvasContext, width: number, height: number) =>
 
 export const renderVideo = Effect.fn(function* renderVideo(
   outputPath: string,
-  theme: string,
+  theme: BundledTheme,
   codeBlocks: CodeBlock[],
   options: RenderVideoOptions = {}
 ) {
   yield* ensureFfmpegAvailable()
 
-  const concurrency = options.concurrency ?? (yield* resolveConcurrency())
+  const concurrency = options.concurrency ?? Math.min(4, availableParallelism())
   const transitionDurationMs = options.transitionDurationMs ?? DEFAULT_TRANSITION_DURATION_MS
   const fps = options.fps ?? DEFAULT_FPS
   const format = options.format ?? "mp4"
@@ -103,17 +102,9 @@ export const renderVideo = Effect.fn(function* renderVideo(
       )
 
       const exitCode = yield* process.exitCode
-      if (exitCode === null) {
+      if (exitCode === null || Number(exitCode) !== 0) {
         return yield* new FfmpegRenderFailed({
-          format,
-          outputPath,
-          stage: "finish",
-        })
-      }
-
-      if (Number(exitCode) !== 0) {
-        return yield* new FfmpegRenderFailed({
-          exitCode: Number(exitCode),
+          ...(exitCode !== null && { exitCode: Number(exitCode) }),
           format,
           outputPath,
           stage: "finish",

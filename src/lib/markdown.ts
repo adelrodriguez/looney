@@ -14,7 +14,7 @@ export const normalizeLanguage = (rawLanguage: string) => {
   return primary.toLowerCase()
 }
 
-const isSupportedLanguage = (language: string): language is BundledLanguage =>
+const checkIsSupportedLanguage = (language: string): language is BundledLanguage =>
   Object.hasOwn(bundledLanguages, language)
 
 export const parseMarkdownCodeBlocks = Effect.fn(function* parseMarkdownCodeBlocks(
@@ -42,7 +42,7 @@ export const parseMarkdownCodeBlocks = Effect.fn(function* parseMarkdownCodeBloc
       })
     }
 
-    if (!isSupportedLanguage(language)) {
+    if (!checkIsSupportedLanguage(language)) {
       return yield* new UnsupportedLanguage({
         language: rawLanguage,
       })

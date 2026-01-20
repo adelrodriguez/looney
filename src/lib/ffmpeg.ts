@@ -54,13 +54,10 @@ const buildArgs = (
 
 const ffmpegCheckCommand = process.platform === "win32" ? "where" : "which"
 
-const checkFfmpegCommand = ShellCommand.make(ffmpegCheckCommand, FFMPEG_BINARY).pipe(
-  ShellCommand.stderr("pipe"),
-  ShellCommand.stdout("pipe")
-)
-
 export const ensureFfmpegAvailable = Effect.fn("ensureFfmpegAvailable")(function* () {
-  const exitCode = yield* checkFfmpegCommand.pipe(
+  const exitCode = yield* ShellCommand.make(ffmpegCheckCommand, FFMPEG_BINARY).pipe(
+    ShellCommand.stderr("pipe"),
+    ShellCommand.stdout("pipe"),
     ShellCommand.exitCode,
     Effect.mapError((cause) => new MissingFfmpeg({ cause, command: FFMPEG_BINARY }))
   )
