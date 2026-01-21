@@ -11,7 +11,7 @@
 ## Requirements
 
 - [Node.js](https://nodejs.org/) (v18 or higher)
-- [ffmpeg](https://ffmpeg.org/) installed and available in your PATH
+- [ffmpeg](https://ffmpeg.org/) (v4.3+ in your PATH)
 
 ## How To Use
 

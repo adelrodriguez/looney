@@ -10,13 +10,18 @@ const CODEC_BY_FORMAT: Record<FfmpegFormat, string> = {
 }
 
 const PIX_FMT_BY_FORMAT: Record<FfmpegFormat, string> = {
-  mp4: "yuv444p",
+  mp4: "yuv420p",
   webm: "yuv420p",
 }
 
 const QUALITY_ARGS_BY_FORMAT: Record<FfmpegFormat, readonly string[]> = {
-  mp4: ["-crf", "14", "-preset", "slow"],
-  webm: ["-crf", "18", "-b:v", "0"],
+  mp4: ["-crf", "12", "-preset", "slow", "-profile:v", "high", "-level:v", "4.1"],
+  webm: ["-crf", "20", "-b:v", "0"],
+}
+
+const CONTAINER_ARGS_BY_FORMAT: Record<FfmpegFormat, readonly string[]> = {
+  mp4: ["-movflags", "+faststart"],
+  webm: [],
 }
 
 const ensureEven = (value: number) => (value % 2 === 0 ? value : value + 1)
@@ -57,6 +62,7 @@ const buildArgs = (
   ...QUALITY_ARGS_BY_FORMAT[format],
   "-pix_fmt",
   PIX_FMT_BY_FORMAT[format],
+  ...CONTAINER_ARGS_BY_FORMAT[format],
   "-y",
   outputPath,
 ]
