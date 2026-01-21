@@ -2,7 +2,7 @@ import { availableParallelism } from "node:os"
 import type { BundledTheme } from "shiki"
 import * as FileSystem from "@effect/platform/FileSystem"
 import { createCanvas, type SKRSContext2D } from "@napi-rs/canvas"
-import { Effect, Stream } from "effect"
+import { Effect, Exit, Stream } from "effect"
 import type { CanvasContext } from "./context"
 import type { CodeBlock, RenderConfig, RenderFrame } from "./types"
 import { FfmpegRenderFailed, type FfmpegFormat } from "./errors"
@@ -107,7 +107,12 @@ export const renderVideo = Effect.fn(function* renderVideo(
               })
           )
         ),
-        (process) => process.kill("SIGTERM").pipe(Effect.orDie)
+        (process, exit) =>
+          Effect.ignore(
+            Exit.isFailure(exit)
+              ? process.kill("SIGTERM")
+              : Effect.whenEffect(process.kill("SIGTERM"), process.isRunning)
+          )
       )
 
       const exitCode = yield* process.exitCode
