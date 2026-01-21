@@ -1,43 +1,75 @@
-import { Args, Command, Options } from "@effect/cli"
+import { Args, Command } from "@effect/cli"
 import * as FileSystem from "@effect/platform/FileSystem"
 import * as Path from "@effect/platform/Path"
 import { Console, Effect, Option } from "effect"
-import { DEFAULT_THEME, DEFAULT_TRANSITION_DURATION_MS } from "../lib/constants"
+import type { RenderConfig } from "../lib/types"
 import { InvalidTransitionDuration, NoCodeBlocksFound } from "../lib/errors"
 import { parseMarkdownCodeBlocks } from "../lib/markdown"
 import { resolveTheme } from "../lib/theme"
 import { renderVideo } from "../lib/video"
+import {
+  background,
+  blockDuration,
+  fontFamily,
+  fontSize,
+  foreground,
+  format,
+  fps,
+  height,
+  lineHeight,
+  output,
+  padding,
+  tabReplacement,
+  theme,
+  transitionDrift,
+  transitionDurationMs,
+  width,
+} from "./options"
 
 const file = Args.file({ exists: "yes", name: "input" }).pipe(
   Args.withDescription("Markdown file to render")
 )
-const output = Options.file("output").pipe(
-  Options.withAlias("o"),
-  Options.withDescription("Destination video path"),
-  Options.optional
-)
 
-const theme = Options.text("theme").pipe(
-  Options.withAlias("t"),
-  Options.withDefault(DEFAULT_THEME),
-  Options.withDescription("Shiki theme for syntax highlighting.")
-)
-
-const transition = Options.integer("transition").pipe(
-  Options.withAlias("tr"),
-  Options.withDefault(DEFAULT_TRANSITION_DURATION_MS),
-  Options.withDescription("Transition duration between slides in milliseconds.")
-)
-
-const format = Options.choice("format", ["mp4", "webm"] as const).pipe(
-  Options.withAlias("f"),
-  Options.withDefault("mp4"),
-  Options.withDescription("Output container format.")
-)
-
-export default Command.make("render", { file, format, output, theme, transition }).pipe(
-  Command.withDescription("Render a code block to a video."),
-  Command.withHandler(({ file, output, theme, transition, format }) =>
+const renderCommand = Command.make(
+  "render",
+  {
+    background,
+    blockDuration,
+    file,
+    fontFamily,
+    fontSize,
+    foreground,
+    format,
+    fps,
+    height,
+    lineHeight,
+    output,
+    padding,
+    tabReplacement,
+    theme,
+    transitionDrift,
+    transitionDurationMs,
+    width,
+  },
+  ({
+    background,
+    blockDuration,
+    file,
+    fontFamily,
+    fontSize,
+    foreground,
+    fps,
+    height,
+    lineHeight,
+    output,
+    padding,
+    tabReplacement,
+    theme,
+    transitionDrift,
+    transitionDurationMs,
+    width,
+    format,
+  }) =>
     Effect.gen(function* () {
       const fileSystem = yield* FileSystem.FileSystem
       const path = yield* Path.Path
@@ -49,9 +81,9 @@ export default Command.make("render", { file, format, output, theme, transition 
         return yield* new NoCodeBlocksFound({ path: file })
       }
 
-      if (transition <= 0) {
+      if (transitionDurationMs <= 0) {
         return yield* new InvalidTransitionDuration({
-          duration: transition,
+          duration: transitionDurationMs,
           minimum: 1,
         })
       }
@@ -65,12 +97,26 @@ export default Command.make("render", { file, format, output, theme, transition 
         onSome: (value) => value,
       })
 
+      const renderConfig: RenderConfig = {
+        background,
+        blockDuration,
+        fontFamily,
+        fontSize,
+        foreground,
+        fps,
+        height,
+        lineHeight,
+        padding,
+        tabReplacement,
+        transitionDrift,
+        transitionDurationMs,
+        width,
+      }
+
       yield* Console.log(`Rendering ${blocks.length} code blocks to ${outputPath}...`)
-      yield* renderVideo(outputPath, resolvedTheme, blocks, {
-        format,
-        transitionDurationMs: transition,
-      })
+      yield* renderVideo(outputPath, resolvedTheme, blocks, renderConfig, { format })
       yield* Console.log(`Video created at ${outputPath}`)
     })
-  )
 )
+
+export default renderCommand

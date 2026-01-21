@@ -1,25 +1,29 @@
 import { Effect } from "effect"
 import { codeToTokens, type BundledTheme, type ThemedToken } from "shiki"
 import type { CanvasContext } from "./context"
-import type { CodeBlock, LayoutToken, Scene, SceneLayout, TokenCategory } from "./types"
+import type {
+  CodeBlock,
+  LayoutToken,
+  RenderConfig,
+  Scene,
+  SceneLayout,
+  TokenCategory,
+} from "./types"
 import {
-  DEFAULT_BACKGROUND,
-  DEFAULT_FOREGROUND,
-  DEFAULT_LINE_HEIGHT,
-  DEFAULT_PADDING,
   FONT_STYLE_BOLD,
   FONT_STYLE_ITALIC,
   FONT_STYLE_NONE,
   FONT_STYLE_UNDERLINE,
-  TAB_REPLACEMENT,
 } from "./constants"
 import { SceneMeasureFailed } from "./errors"
 import { buildFont, drawUnderline } from "./text"
 import { categorizeToken } from "./token"
 
-const normalizeTokenContent = (content: string) => content.split("\t").join(TAB_REPLACEMENT)
+const normalizeTokenContent = (config: RenderConfig, content: string) =>
+  content.split("\t").join(config.tabReplacement)
 
 const measureTokenWidth = (
+  config: RenderConfig,
   context: CanvasContext,
   content: string,
   isItalic: boolean,
@@ -27,7 +31,7 @@ const measureTokenWidth = (
 ) => {
   const measureContext = context
   const previousFont = measureContext.font
-  measureContext.font = buildFont(isItalic, isBold)
+  measureContext.font = buildFont(config, isItalic, isBold)
   const width = measureContext.measureText(content).width
   measureContext.font = previousFont
   return width
@@ -66,6 +70,7 @@ export type MeasuredScene = {
 }
 
 export const measureScene = Effect.fn(function* measureScene(
+  config: RenderConfig,
   context: CanvasContext,
   codeBlock: CodeBlock,
   theme: BundledTheme
@@ -80,15 +85,15 @@ export const measureScene = Effect.fn(function* measureScene(
       })
 
       const tokens = tokenResult.tokens
-      const foreground = tokenResult.fg ?? DEFAULT_FOREGROUND
-      const background = tokenResult.bg ?? DEFAULT_BACKGROUND
+      const foreground = tokenResult.fg ?? config.foreground
+      const background = tokenResult.bg ?? config.background
 
       const lineMetrics = tokens.map((lineTokens) => {
         const metrics: MeasuredToken[] = []
         let lineWidth = 0
 
         for (const token of lineTokens) {
-          const content = normalizeTokenContent(token.content)
+          const content = normalizeTokenContent(config, token.content)
           if (!content) {
             continue
           }
@@ -96,7 +101,7 @@ export const measureScene = Effect.fn(function* measureScene(
           const styleFlags = token.fontStyle ?? FONT_STYLE_NONE
           const isItalic = (styleFlags & FONT_STYLE_ITALIC) === FONT_STYLE_ITALIC
           const isBold = (styleFlags & FONT_STYLE_BOLD) === FONT_STYLE_BOLD
-          const width = measureTokenWidth(context, content, isItalic, isBold)
+          const width = measureTokenWidth(config, context, content, isItalic, isBold)
           const color = token.color ?? foreground
 
           metrics.push({
@@ -118,9 +123,9 @@ export const measureScene = Effect.fn(function* measureScene(
       const maxLineWidth =
         lineMetrics.length > 0 ? Math.max(...lineMetrics.map((line) => line.width)) : 0
       const contentWidth = Math.max(0, maxLineWidth)
-      const contentHeight = tokens.length * DEFAULT_LINE_HEIGHT
-      const blockWidth = contentWidth + DEFAULT_PADDING * 2
-      const blockHeight = contentHeight + DEFAULT_PADDING * 2
+      const contentHeight = tokens.length * config.lineHeight
+      const blockWidth = contentWidth + config.padding * 2
+      const blockHeight = contentHeight + config.padding * 2
 
       return {
         background,
@@ -136,23 +141,20 @@ export const measureScene = Effect.fn(function* measureScene(
   })
 })
 
-export const resolveFrameSize = (
-  measuredScenes: MeasuredScene[],
-  minWidth: number,
-  minHeight: number
-) => {
+export const resolveFrameSize = (config: RenderConfig, measuredScenes: MeasuredScene[]) => {
   const maxBlockWidth =
     measuredScenes.length > 0 ? Math.max(...measuredScenes.map((scene) => scene.blockWidth)) : 0
   const maxBlockHeight =
     measuredScenes.length > 0 ? Math.max(...measuredScenes.map((scene) => scene.blockHeight)) : 0
 
   return {
-    height: Math.max(minHeight, Math.ceil(maxBlockHeight)),
-    width: Math.max(minWidth, Math.ceil(maxBlockWidth)),
+    height: Math.max(config.height, Math.ceil(maxBlockHeight)),
+    width: Math.max(config.width, Math.ceil(maxBlockWidth)),
   }
 }
 
 export const layoutScene = (
+  config: RenderConfig,
   measured: MeasuredScene,
   frameWidth: number,
   frameHeight: number
@@ -162,8 +164,8 @@ export const layoutScene = (
 
   const layout: SceneLayout = {
     lines: measured.lines.map((line, lineIndex) => {
-      let cursorX = blockX + DEFAULT_PADDING
-      const cursorY = blockY + DEFAULT_PADDING + lineIndex * DEFAULT_LINE_HEIGHT
+      let cursorX = blockX + config.padding
+      const cursorY = blockY + config.padding + lineIndex * config.lineHeight
       const layoutTokens: LayoutToken[] = line.tokens.map((token) => {
         const layoutToken = {
           ...token,
@@ -193,6 +195,7 @@ export const layoutScene = (
 }
 
 export const renderSceneText = (
+  config: RenderConfig,
   context: CanvasContext,
   scene: Scene,
   opacity: number,
@@ -204,8 +207,8 @@ export const renderSceneText = (
   }
 
   const textContext = context
-  const startX = blockX + DEFAULT_PADDING
-  const startY = blockY + DEFAULT_PADDING
+  const startX = blockX + config.padding
+  const startY = blockY + config.padding
   const previousAlpha = textContext.globalAlpha
   const previousBaseline = textContext.textBaseline
   const previousAlign = textContext.textAlign
@@ -219,10 +222,10 @@ export const renderSceneText = (
   for (let lineIndex = 0; lineIndex < scene.tokens.length; lineIndex += 1) {
     const lineTokens = scene.tokens[lineIndex] ?? []
     let cursorX = startX
-    const cursorY = startY + lineIndex * DEFAULT_LINE_HEIGHT
+    const cursorY = startY + lineIndex * config.lineHeight
 
     for (const token of lineTokens) {
-      const content = normalizeTokenContent(token.content)
+      const content = normalizeTokenContent(config, token.content)
       if (!content) {
         continue
       }
@@ -232,14 +235,14 @@ export const renderSceneText = (
       const isBold = (fontStyle & FONT_STYLE_BOLD) === FONT_STYLE_BOLD
       const isUnderline = (fontStyle & FONT_STYLE_UNDERLINE) === FONT_STYLE_UNDERLINE
 
-      textContext.font = buildFont(isItalic, isBold)
+      textContext.font = buildFont(config, isItalic, isBold)
       textContext.fillStyle = token.color ?? scene.foreground
       textContext.fillText(content, cursorX, cursorY)
 
       const tokenWidth = textContext.measureText(content).width
 
       if (isUnderline) {
-        drawUnderline(textContext, cursorX, cursorY, tokenWidth)
+        drawUnderline(config, textContext, cursorX, cursorY, tokenWidth)
       }
 
       cursorX += tokenWidth

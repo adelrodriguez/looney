@@ -5,6 +5,22 @@ export type CodeBlock = {
   language: BundledLanguage
 }
 
+export type RenderConfig = {
+  background: string
+  blockDuration: number
+  fontFamily: string
+  fontSize: number
+  foreground: string
+  fps: number
+  height: number
+  lineHeight: number
+  padding: number
+  tabReplacement: string
+  transitionDrift: number
+  transitionDurationMs: number
+  width: number
+}
+
 export type TokenCategory =
   | "keyword"
   | "function"
