@@ -1,7 +1,24 @@
 import { describe, expect, it } from "bun:test"
-import type { TokenCategory } from "../types"
+import type { RenderConfig, TokenCategory } from "../types"
 import { categorizeToken } from "../token"
 import { buildTransitionTokens, diffLayoutTokens, easeInOutCubic } from "../transition"
+
+const renderConfig: RenderConfig = {
+  background: "#0b0b0b",
+  blockDuration: 2,
+  fontFamily:
+    "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+  fontSize: 24,
+  foreground: "#e6e6e6",
+  fps: 60,
+  height: 720,
+  lineHeight: 34,
+  padding: 64,
+  tabReplacement: "  ",
+  transitionDrift: 8,
+  transitionDurationMs: 800,
+  width: 1280,
+}
 
 const buildToken = (category: TokenCategory, content: string, x: number) => ({
   category,
@@ -76,7 +93,7 @@ describe("diffLayoutTokens", () => {
       [buildToken("keyword", "void", 0), buildToken("function", "Main", 40)]
     )
 
-    const tokens = buildTransitionTokens(diff, 0.5)
+    const tokens = buildTransitionTokens(renderConfig, diff, 0.5)
     const contents = tokens.map((token) => token.content)
 
     expect(contents).toContain("int")

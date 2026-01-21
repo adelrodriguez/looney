@@ -1,8 +1,7 @@
 import { Stream } from "effect"
 import type { CanvasContext } from "./context"
-import type { RenderFrame, Scene } from "./types"
+import type { RenderConfig, RenderFrame, Scene } from "./types"
 import { blendColors } from "./color"
-import { DEFAULT_BLOCK_DURATION, DEFAULT_FPS } from "./constants"
 import { renderSceneText } from "./scene"
 import {
   buildTransitionDiff,
@@ -12,6 +11,7 @@ import {
 } from "./transition"
 
 export const renderFrame = (
+  config: RenderConfig,
   context: CanvasContext,
   frameWidth: number,
   frameHeight: number,
@@ -54,9 +54,16 @@ export const renderFrame = (
   frameContext.fillRect(0, 0, frameWidth, frameHeight)
 
   if (frame.kind === "scene") {
-    renderSceneText(frameContext, frame.scene, frame.opacity, frame.positionX, frame.positionY)
+    renderSceneText(
+      config,
+      frameContext,
+      frame.scene,
+      frame.opacity,
+      frame.positionX,
+      frame.positionY
+    )
   } else {
-    renderTransitionTokens(frameContext, frame.tokens)
+    renderTransitionTokens(config, frameContext, frame.tokens)
   }
 
   if (typeof frameContext.setTransformMatrix === "function") {
@@ -66,9 +73,13 @@ export const renderFrame = (
   frameContext.fillStyle = startFillStyle
 }
 
-export const computeFrameCounts = (transitionDurationMs: number, fps = DEFAULT_FPS) => {
+export const computeFrameCounts = (
+  transitionDurationMs: number,
+  fps: number,
+  blockDuration: number
+) => {
   const frameDuration = 1 / fps
-  const blockFrames = Math.max(1, Math.round(DEFAULT_BLOCK_DURATION * fps))
+  const blockFrames = Math.max(1, Math.round(blockDuration * fps))
   const transitionFrames = Math.max(1, Math.round((transitionDurationMs / 1000) * fps))
 
   return {
@@ -93,7 +104,12 @@ export const buildSceneFrames = (scene: Scene, blockFrames: number) =>
     )
   )
 
-export const buildTransitionFrames = (scene: Scene, nextScene: Scene, transitionFrames: number) => {
+export const buildTransitionFrames = (
+  config: RenderConfig,
+  scene: Scene,
+  nextScene: Scene,
+  transitionFrames: number
+) => {
   const diff = buildTransitionDiff(scene, nextScene)
 
   return Stream.range(1, transitionFrames).pipe(
@@ -101,7 +117,7 @@ export const buildTransitionFrames = (scene: Scene, nextScene: Scene, transition
       const rawProgress = index / transitionFrames
       const progress = easeInOutCubic(rawProgress)
       const blendedBackground = blendColors(scene.background, nextScene.background, progress)
-      const tokens = buildTransitionTokens(diff, progress)
+      const tokens = buildTransitionTokens(config, diff, progress)
 
       return {
         background: blendedBackground,
@@ -112,14 +128,19 @@ export const buildTransitionFrames = (scene: Scene, nextScene: Scene, transition
   )
 }
 
-export const buildFramesStream = (scenes: Scene[], blockFrames: number, transitionFrames: number) =>
+export const buildFramesStream = (
+  config: RenderConfig,
+  scenes: Scene[],
+  blockFrames: number,
+  transitionFrames: number
+) =>
   Stream.fromIterable(scenes).pipe(
     Stream.zipWithIndex,
     Stream.flatMap(([scene, index]) => {
       const nextScene = scenes[index + 1]
       const base = buildSceneFrames(scene, blockFrames)
       return nextScene
-        ? Stream.concat(base, buildTransitionFrames(scene, nextScene, transitionFrames))
+        ? Stream.concat(base, buildTransitionFrames(config, scene, nextScene, transitionFrames))
         : base
     })
   )

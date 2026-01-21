@@ -1,19 +1,25 @@
 import type { CanvasContext } from "./context"
-import { DEFAULT_FONT_FAMILY, DEFAULT_FONT_SIZE } from "./constants"
+import type { RenderConfig } from "./types"
 
-export const buildFont = (isItalic: boolean, isBold: boolean) => {
+export const buildFont = (config: RenderConfig, isItalic: boolean, isBold: boolean) => {
   const style = `${isItalic ? "italic " : ""}${isBold ? "bold " : ""}`
-  return `${style}${DEFAULT_FONT_SIZE}px ${DEFAULT_FONT_FAMILY}`
+  return `${style}${config.fontSize}px ${config.fontFamily}`
 }
 
-export const drawUnderline = (context: CanvasContext, x: number, y: number, width: number) => {
+export const drawUnderline = (
+  config: RenderConfig,
+  context: CanvasContext,
+  x: number,
+  y: number,
+  width: number
+) => {
   const drawContext = context
   const previousStrokeStyle = drawContext.strokeStyle
   const previousLineWidth = drawContext.lineWidth
-  const underlineY = y + DEFAULT_FONT_SIZE + 2
+  const underlineY = y + config.fontSize + 2
 
   drawContext.strokeStyle = drawContext.fillStyle
-  drawContext.lineWidth = Math.max(1, Math.floor(DEFAULT_FONT_SIZE / 12))
+  drawContext.lineWidth = Math.max(1, Math.floor(config.fontSize / 12))
   drawContext.beginPath()
   drawContext.moveTo(x, underlineY)
   drawContext.lineTo(x + width, underlineY)

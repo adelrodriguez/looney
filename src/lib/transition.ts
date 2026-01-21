@@ -1,12 +1,7 @@
 import type { CanvasContext } from "./context"
-import type { DrawToken, LayoutToken, Scene, TransitionDiff } from "./types"
+import type { DrawToken, LayoutToken, RenderConfig, Scene, TransitionDiff } from "./types"
 import { blendColors, lerp } from "./color"
-import {
-  DEFAULT_TRANSITION_DRIFT,
-  FONT_STYLE_BOLD,
-  FONT_STYLE_ITALIC,
-  FONT_STYLE_UNDERLINE,
-} from "./constants"
+import { FONT_STYLE_BOLD, FONT_STYLE_ITALIC, FONT_STYLE_UNDERLINE } from "./constants"
 import { buildFont, drawUnderline } from "./text"
 
 const buildExactKey = (token: LayoutToken) => `exact::${token.content}::${token.fontStyle}`
@@ -232,7 +227,11 @@ export const easeInOutCubic = (progress: number) => {
   return clamped < 0.5 ? 4 * clamped * clamped * clamped : 1 - (-2 * clamped + 2) ** 3 / 2
 }
 
-export const buildTransitionTokens = (diff: TransitionDiff, progress: number) => {
+export const buildTransitionTokens = (
+  config: RenderConfig,
+  diff: TransitionDiff,
+  progress: number
+) => {
   const clamped = Math.min(1, Math.max(0, progress))
   const tokens: DrawToken[] = []
 
@@ -249,7 +248,7 @@ export const buildTransitionTokens = (diff: TransitionDiff, progress: number) =>
       opacity,
       width: token.width,
       x: token.x,
-      y: token.y - DEFAULT_TRANSITION_DRIFT * clamped,
+      y: token.y - config.transitionDrift * clamped,
     })
   }
 
@@ -313,14 +312,18 @@ export const buildTransitionTokens = (diff: TransitionDiff, progress: number) =>
       opacity,
       width: token.width,
       x: token.x,
-      y: token.y + DEFAULT_TRANSITION_DRIFT * (1 - clamped),
+      y: token.y + config.transitionDrift * (1 - clamped),
     })
   }
 
   return tokens
 }
 
-export const renderTransitionTokens = (context: CanvasContext, tokens: DrawToken[]) => {
+export const renderTransitionTokens = (
+  config: RenderConfig,
+  context: CanvasContext,
+  tokens: DrawToken[]
+) => {
   const textContext = context
   const previousAlpha = textContext.globalAlpha
   const previousBaseline = textContext.textBaseline
@@ -342,12 +345,12 @@ export const renderTransitionTokens = (context: CanvasContext, tokens: DrawToken
     const isUnderline = (fontStyle & FONT_STYLE_UNDERLINE) === FONT_STYLE_UNDERLINE
 
     textContext.globalAlpha = token.opacity
-    textContext.font = buildFont(isItalic, isBold)
+    textContext.font = buildFont(config, isItalic, isBold)
     textContext.fillStyle = token.color
     textContext.fillText(token.content, token.x, token.y)
 
     if (isUnderline && token.width > 0) {
-      drawUnderline(textContext, token.x, token.y, token.width)
+      drawUnderline(config, textContext, token.x, token.y, token.width)
     }
   }
 
