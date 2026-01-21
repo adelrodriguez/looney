@@ -17,6 +17,24 @@ export class UnsupportedLanguage extends Data.TaggedError("UnsupportedLanguage")
   language: string
 }> {}
 
+export class UnsupportedFileExtension extends Data.TaggedError("UnsupportedFileExtension")<{
+  path: string
+}> {}
+
+export class GitRepositoryNotFound extends Data.TaggedError("GitRepositoryNotFound")<{
+  path: string
+}> {}
+
+export class GitCommandFailed extends Data.TaggedError("GitCommandFailed")<{
+  args: string[]
+  cause?: unknown
+  exitCode?: number
+}> {}
+
+export class NoGitCommitsFound extends Data.TaggedError("NoGitCommitsFound")<{
+  path: string
+}> {}
+
 export class NoCodeBlocksFound extends Data.TaggedError("NoCodeBlocksFound")<{ path?: string }> {}
 
 export class InvalidTransitionDuration extends Data.TaggedError("InvalidTransitionDuration")<{

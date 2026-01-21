@@ -1,5 +1,6 @@
 import type { BundledTheme } from "shiki"
 import { Options } from "@effect/cli"
+import * as Schema from "effect/Schema"
 
 const DEFAULT_THEME: BundledTheme = "github-dark"
 const DEFAULT_WIDTH = 0
@@ -111,4 +112,24 @@ export const width = Options.integer("width").pipe(
   Options.withAlias("w"),
   Options.withDefault(DEFAULT_WIDTH),
   Options.withDescription("Minimum output width in pixels (0 = auto)")
+)
+
+// Git-specific options
+
+export const commits = Options.integer("commits").pipe(
+  Options.withAlias("c"),
+  Options.withDefault(10),
+  Options.withSchema(Schema.Number.pipe(Schema.greaterThanOrEqualTo(1))),
+  Options.withDescription("Number of commits to render")
+)
+
+export const language = Options.text("language").pipe(
+  Options.withAlias("l"),
+  Options.optional,
+  Options.withDescription("Override the language used for syntax highlighting")
+)
+
+export const reverse = Options.boolean("reverse", { ifPresent: true }).pipe(
+  Options.withDescription("Render from newest to oldest commit"),
+  Options.withDefault(false)
 )
