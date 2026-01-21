@@ -1,5 +1,6 @@
 import { availableParallelism } from "node:os"
 import type { BundledTheme } from "shiki"
+import * as FileSystem from "@effect/platform/FileSystem"
 import { createCanvas, type SKRSContext2D } from "@napi-rs/canvas"
 import { Effect, Stream } from "effect"
 import type { CanvasContext } from "./context"
@@ -45,6 +46,7 @@ export const renderVideo = Effect.fn(function* renderVideo(
     (codeBlock) =>
       Effect.gen(function* () {
         const measurementContext = createCanvas(1, 1).getContext("2d")
+        measurementContext.textRendering = "optimizeLegibility"
         return yield* measureScene(config, measurementContext, codeBlock, theme as never)
       }),
     { concurrency }
@@ -55,6 +57,7 @@ export const renderVideo = Effect.fn(function* renderVideo(
 
   const canvas = createCanvas(evenWidth, evenHeight)
   const context = canvas.getContext("2d")
+  context.textRendering = "optimizeLegibility"
 
   const scenes = measuredScenes.map((measured) =>
     layoutScene(config, measured, evenWidth, evenHeight)
@@ -77,8 +80,23 @@ export const renderVideo = Effect.fn(function* renderVideo(
 
   return yield* Effect.scoped(
     Effect.gen(function* () {
+      const fileSystem = yield* FileSystem.FileSystem
+      const rawPath = yield* fileSystem.makeTempFileScoped({ suffix: ".raw" })
+
+      yield* Stream.run(frameBytesStream, fileSystem.sink(rawPath)).pipe(
+        Effect.mapError(
+          (cause) =>
+            new FfmpegRenderFailed({
+              cause,
+              format,
+              outputPath,
+              stage: "stream",
+            })
+        )
+      )
+
       const process = yield* Effect.acquireRelease(
-        startFfmpegProcess(format, evenWidth, evenHeight, config.fps, outputPath).pipe(
+        startFfmpegProcess(format, evenWidth, evenHeight, config.fps, rawPath, outputPath).pipe(
           Effect.mapError(
             (cause) =>
               new FfmpegRenderFailed({
@@ -90,18 +108,6 @@ export const renderVideo = Effect.fn(function* renderVideo(
           )
         ),
         (process) => process.kill("SIGTERM").pipe(Effect.orDie)
-      )
-
-      yield* Stream.run(frameBytesStream, process.stdin).pipe(
-        Effect.mapError(
-          (cause) =>
-            new FfmpegRenderFailed({
-              cause,
-              format,
-              outputPath,
-              stage: "stream",
-            })
-        )
       )
 
       const exitCode = yield* process.exitCode

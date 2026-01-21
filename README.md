@@ -2,17 +2,20 @@
   <h1 align="center">🍂 sakuga</h1>
 
   <p align="center">
-    <strong>Create code animations</strong>
+    <strong>Create code animations from Markdown files</strong>
   </p>
 </div>
 
-## Demo
+![Sakuga demo](examples/demo.gif)
 
-<video src="examples/demo.mp4" controls></video>
+## Requirements
+
+- [Node.js](https://nodejs.org/) (v18 or higher)
+- [ffmpeg](https://ffmpeg.org/) installed and available in your PATH
 
 ## How To Use
 
-Install `ffmpeg`, then create a Markdown file with fenced code blocks:
+Create a Markdown file with fenced code blocks:
 
 ```bash
 bunx sakuga render examples/demo.md
@@ -35,8 +38,8 @@ bunx sakuga render examples/demo.md --output examples/demo.mp4
 - `--font-size`: Font size in pixels (default: `24`).
 - `--line-height`: Line height in pixels (default: `34`).
 - `--padding`: Padding around the code block in pixels (default: `64`).
-- `--width`: Minimum width of the rendered video in pixels (default: `1280`).
-- `--height`: Minimum height of the rendered video in pixels (default: `720`).
+- `--width`: Minimum width of the rendered video in pixels (default: `0` for auto).
+- `--height`: Minimum height of the rendered video in pixels (default: `0` for auto).
 - `--fps`: Frames per second (default: `60`).
 - `--block-duration`: Duration of each code block in seconds (default: `2`).
 - `--transition`, `-tr`: Transition duration between slides in milliseconds (default: `800`).
@@ -48,3 +51,7 @@ bunx sakuga render examples/demo.md --output examples/demo.mp4
 Sakuga builds scenes concurrently when possible to maximize performance.
 
 Made with [🥐 `pastry`](https://github.com/adelrodriguez/pastry)
+
+## License
+
+[MIT](LICENSE)

@@ -11,6 +11,7 @@ export type CanvasText = {
   strokeStyle: unknown
   textAlign: string
   textBaseline: string
+  textRendering: string
   beginPath: () => void
   fillRect: (x: number, y: number, width: number, height: number) => void
   fillText: (text: string, x: number, y: number) => void

@@ -2,8 +2,8 @@ import type { BundledTheme } from "shiki"
 import { Options } from "@effect/cli"
 
 const DEFAULT_THEME: BundledTheme = "github-dark"
-const DEFAULT_WIDTH = 1280
-const DEFAULT_HEIGHT = 720
+const DEFAULT_WIDTH = 0
+const DEFAULT_HEIGHT = 0
 const DEFAULT_FPS = 60
 const DEFAULT_BLOCK_DURATION = 2
 const DEFAULT_TRANSITION_DURATION_MS = 800
@@ -62,7 +62,7 @@ export const fps = Options.integer("fps").pipe(
 export const height = Options.integer("height").pipe(
   Options.withAlias("h"),
   Options.withDefault(DEFAULT_HEIGHT),
-  Options.withDescription("Minimum output height in pixels")
+  Options.withDescription("Minimum output height in pixels (0 = auto)")
 )
 
 export const lineHeight = Options.integer("line-height").pipe(
@@ -110,5 +110,5 @@ export const transitionDurationMs = Options.integer("transition").pipe(
 export const width = Options.integer("width").pipe(
   Options.withAlias("w"),
   Options.withDefault(DEFAULT_WIDTH),
-  Options.withDescription("Minimum output width in pixels")
+  Options.withDescription("Minimum output width in pixels (0 = auto)")
 )

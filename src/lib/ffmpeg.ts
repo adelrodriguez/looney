@@ -10,8 +10,13 @@ const CODEC_BY_FORMAT: Record<FfmpegFormat, string> = {
 }
 
 const PIX_FMT_BY_FORMAT: Record<FfmpegFormat, string> = {
-  mp4: "yuv420p",
+  mp4: "yuv444p",
   webm: "yuv420p",
+}
+
+const QUALITY_ARGS_BY_FORMAT: Record<FfmpegFormat, readonly string[]> = {
+  mp4: ["-crf", "14", "-preset", "slow"],
+  webm: ["-crf", "18", "-b:v", "0"],
 }
 
 const ensureEven = (value: number) => (value % 2 === 0 ? value : value + 1)
@@ -32,6 +37,7 @@ const buildArgs = (
   width: number,
   height: number,
   fps: number,
+  inputPath: string,
   outputPath: string
 ) => [
   "-f",
@@ -43,9 +49,12 @@ const buildArgs = (
   "-r",
   `${fps}`,
   "-i",
-  "-",
+  inputPath,
+  "-vf",
+  "unsharp=5:5:0.5:5:5:0.5",
   "-c:v",
   CODEC_BY_FORMAT[format],
+  ...QUALITY_ARGS_BY_FORMAT[format],
   "-pix_fmt",
   PIX_FMT_BY_FORMAT[format],
   "-y",
@@ -72,10 +81,14 @@ export const startFfmpegProcess = (
   width: number,
   height: number,
   fps: number,
+  inputPath: string,
   outputPath: string
 ) =>
-  ShellCommand.make(FFMPEG_BINARY, ...buildArgs(format, width, height, fps, outputPath)).pipe(
-    ShellCommand.stdin("pipe"),
+  ShellCommand.make(
+    FFMPEG_BINARY,
+    ...buildArgs(format, width, height, fps, inputPath, outputPath)
+  ).pipe(
+    ShellCommand.stdin("inherit"),
     ShellCommand.stdout("inherit"),
     ShellCommand.stderr("inherit"),
     ShellCommand.start

@@ -169,8 +169,8 @@ export const layoutScene = (
       const layoutTokens: LayoutToken[] = line.tokens.map((token) => {
         const layoutToken = {
           ...token,
-          x: cursorX,
-          y: cursorY,
+          x: Math.round(cursorX),
+          y: Math.round(cursorY),
         }
         cursorX += token.width
         return layoutToken
@@ -237,12 +237,12 @@ export const renderSceneText = (
 
       textContext.font = buildFont(config, isItalic, isBold)
       textContext.fillStyle = token.color ?? scene.foreground
-      textContext.fillText(content, cursorX, cursorY)
+      textContext.fillText(content, Math.round(cursorX), Math.round(cursorY))
 
       const tokenWidth = textContext.measureText(content).width
 
       if (isUnderline) {
-        drawUnderline(config, textContext, cursorX, cursorY, tokenWidth)
+        drawUnderline(config, textContext, Math.round(cursorX), Math.round(cursorY), tokenWidth)
       }
 
       cursorX += tokenWidth

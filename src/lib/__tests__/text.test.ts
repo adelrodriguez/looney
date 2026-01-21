@@ -43,6 +43,7 @@ const createContext = () => {
     strokeStyle: "#00f",
     textAlign: "left",
     textBaseline: "top",
+    textRendering: "auto",
   }
 
   return { calls, context }

@@ -347,10 +347,10 @@ export const renderTransitionTokens = (
     textContext.globalAlpha = token.opacity
     textContext.font = buildFont(config, isItalic, isBold)
     textContext.fillStyle = token.color
-    textContext.fillText(token.content, token.x, token.y)
+    textContext.fillText(token.content, Math.round(token.x), Math.round(token.y))
 
     if (isUnderline && token.width > 0) {
-      drawUnderline(config, textContext, token.x, token.y, token.width)
+      drawUnderline(config, textContext, Math.round(token.x), Math.round(token.y), token.width)
     }
   }
 
