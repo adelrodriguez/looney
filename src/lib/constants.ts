@@ -3,7 +3,7 @@ import type { BundledTheme } from "shiki"
 export const DEFAULT_THEME: BundledTheme = "github-dark"
 export const DEFAULT_WIDTH = 1280
 export const DEFAULT_HEIGHT = 720
-export const DEFAULT_FPS = 30
+export const DEFAULT_FPS = 60
 export const DEFAULT_BLOCK_DURATION = 2
 export const DEFAULT_TRANSITION_DURATION_MS = 800
 export const DEFAULT_TRANSITION_DRIFT = 8

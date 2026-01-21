@@ -14,14 +14,15 @@ export const normalizeLanguage = (rawLanguage: string) => {
   return primary.toLowerCase()
 }
 
-const isSupportedLanguage = (language: string): language is BundledLanguage =>
+const checkIsSupportedLanguage = (language: string): language is BundledLanguage =>
   Object.hasOwn(bundledLanguages, language)
 
 export const parseMarkdownCodeBlocks = Effect.fn(function* parseMarkdownCodeBlocks(
   markdown: string
 ) {
   const tokens = yield* Effect.try({
-    catch: () => new MissingCodeBlockLanguage({ reason: "Unable to parse markdown." }),
+    catch: () =>
+      new MissingCodeBlockLanguage({ context: "parse", detail: "Unable to parse markdown." }),
     try: () => marked.lexer(markdown),
   })
   const blocks: CodeBlock[] = []
@@ -36,11 +37,12 @@ export const parseMarkdownCodeBlocks = Effect.fn(function* parseMarkdownCodeBloc
 
     if (!language) {
       return yield* new MissingCodeBlockLanguage({
-        reason: "Every fenced code block needs a language (for example: ```ts).",
+        context: "codeBlock",
+        detail: "Every fenced code block needs a language (for example: ```ts).",
       })
     }
 
-    if (!isSupportedLanguage(language)) {
+    if (!checkIsSupportedLanguage(language)) {
       return yield* new UnsupportedLanguage({
         language: rawLanguage,
       })

@@ -71,11 +71,7 @@ export const measureScene = Effect.fn(function* measureScene(
   theme: BundledTheme
 ) {
   return yield* Effect.tryPromise({
-    catch: (cause: unknown) =>
-      new SceneMeasureFailed({
-        cause,
-        reason: "Unable to measure scene tokens.",
-      }),
+    catch: (cause: unknown) => new SceneMeasureFailed({ cause }),
     try: async () => {
       const tokenResult = await codeToTokens(codeBlock.code, {
         includeExplanation: "scopeName",

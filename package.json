@@ -56,8 +56,6 @@
     "@napi-rs/canvas": "^0.1.88",
     "effect": "3.19.14",
     "marked": "^17.0.1",
-    "mediabunny": "^1.28.0",
-    "node-webcodecs": "^1.0.0",
     "shiki": "^3.21.0"
   },
   "devDependencies": {
