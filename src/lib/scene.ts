@@ -19,16 +19,17 @@ import { SceneMeasureFailed } from "./errors"
 import { buildFont, drawUnderline } from "./text"
 import { categorizeToken } from "./token"
 
-const normalizeTokenContent = (config: RenderConfig, content: string) =>
-  content.split("\t").join(config.tabReplacement)
+function normalizeTokenContent(config: RenderConfig, content: string) {
+  return content.split("\t").join(config.tabReplacement)
+}
 
-const measureTokenWidth = (
+function measureTokenWidth(
   config: RenderConfig,
   context: CanvasContext,
   content: string,
   isItalic: boolean,
   isBold: boolean
-) => {
+) {
   const measureContext = context
   const previousFont = measureContext.font
   measureContext.font = buildFont(config, isItalic, isBold)
@@ -37,7 +38,7 @@ const measureTokenWidth = (
   return width
 }
 
-const resolveTokenCategory = (token: ThemedToken) => {
+function resolveTokenCategory(token: ThemedToken) {
   const scopes =
     token.explanation?.flatMap((explanation) =>
       explanation.scopes.map((scope) => scope.scopeName)
@@ -141,7 +142,7 @@ export const measureScene = Effect.fn(function* measureScene(
   })
 })
 
-export const resolveFrameSize = (config: RenderConfig, measuredScenes: MeasuredScene[]) => {
+export function resolveFrameSize(config: RenderConfig, measuredScenes: MeasuredScene[]) {
   const maxBlockWidth =
     measuredScenes.length > 0 ? Math.max(...measuredScenes.map((scene) => scene.blockWidth)) : 0
   const maxBlockHeight =
@@ -153,12 +154,12 @@ export const resolveFrameSize = (config: RenderConfig, measuredScenes: MeasuredS
   }
 }
 
-export const layoutScene = (
+export function layoutScene(
   config: RenderConfig,
   measured: MeasuredScene,
   frameWidth: number,
   frameHeight: number
-): Scene => {
+): Scene {
   const blockX = Math.max(0, Math.round((frameWidth - measured.blockWidth) / 2))
   const blockY = Math.max(0, Math.round((frameHeight - measured.blockHeight) / 2))
 
@@ -194,14 +195,14 @@ export const layoutScene = (
   }
 }
 
-export const renderSceneText = (
+export function renderSceneText(
   config: RenderConfig,
   context: CanvasContext,
   scene: Scene,
   opacity: number,
   blockX: number,
   blockY: number
-) => {
+) {
   if (opacity <= 0) {
     return
   }

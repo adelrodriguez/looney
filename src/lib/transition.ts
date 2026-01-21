@@ -4,21 +4,27 @@ import { blendColors, lerp } from "./color"
 import { FONT_STYLE_BOLD, FONT_STYLE_ITALIC, FONT_STYLE_UNDERLINE } from "./constants"
 import { buildFont, drawUnderline } from "./text"
 
-const buildExactKey = (token: LayoutToken) => `exact::${token.content}::${token.fontStyle}`
-const buildCategoryKey = (token: LayoutToken) => `category::${token.category}`
+function buildExactKey(token: LayoutToken) {
+  return `exact::${token.content}::${token.fontStyle}`
+}
 
-const buildTokenSequence = (tokens: LayoutToken[], buildKey: (token: LayoutToken) => string) =>
-  tokens.map((token) => ({
+function buildCategoryKey(token: LayoutToken) {
+  return `category::${token.category}`
+}
+
+function buildTokenSequence(tokens: LayoutToken[], buildKey: (token: LayoutToken) => string) {
+  return tokens.map((token) => ({
     key: buildKey(token),
     token,
   }))
+}
 
 type TokenWithIndex = {
   index: number
   token: LayoutToken
 }
 
-const groupByKey = (tokens: LayoutToken[], buildKey: (token: LayoutToken) => string) => {
+function groupByKey(tokens: LayoutToken[], buildKey: (token: LayoutToken) => string) {
   const grouped = new Map<string, TokenWithIndex[]>()
   tokens.forEach((token, index) => {
     const key = buildKey(token)
@@ -29,11 +35,11 @@ const groupByKey = (tokens: LayoutToken[], buildKey: (token: LayoutToken) => str
   return grouped
 }
 
-const diffByKey = (
+function diffByKey(
   fromTokens: LayoutToken[],
   toTokens: LayoutToken[],
   buildKey: (token: LayoutToken) => string
-) => {
+) {
   const fromItems = buildTokenSequence(fromTokens, buildKey)
   const toItems = buildTokenSequence(toTokens, buildKey)
   const fromKeys = fromItems.map((item) => item.key)
@@ -108,7 +114,7 @@ const diffByKey = (
   }
 }
 
-const matchByCategory = (removed: LayoutToken[], added: LayoutToken[]) => {
+function matchByCategory(removed: LayoutToken[], added: LayoutToken[]) {
   const matched: Array<{ from: LayoutToken; to: LayoutToken }> = []
   const usedFrom = new Set<number>()
   const usedTo = new Set<number>()
@@ -156,7 +162,7 @@ const matchByCategory = (removed: LayoutToken[], added: LayoutToken[]) => {
   }
 }
 
-const matchByExactContent = (removed: LayoutToken[], added: LayoutToken[]) => {
+function matchByExactContent(removed: LayoutToken[], added: LayoutToken[]) {
   const matched: Array<{ from: LayoutToken; to: LayoutToken }> = []
   const usedFrom = new Set<number>()
   const usedTo = new Set<number>()
@@ -204,10 +210,11 @@ const matchByExactContent = (removed: LayoutToken[], added: LayoutToken[]) => {
   }
 }
 
-export const flattenSceneTokens = (scene: Scene) =>
-  scene.layout.lines.flatMap((line) => line.tokens)
+export function flattenSceneTokens(scene: Scene) {
+  return scene.layout.lines.flatMap((line) => line.tokens)
+}
 
-export const diffLayoutTokens = (fromTokens: LayoutToken[], toTokens: LayoutToken[]) => {
+export function diffLayoutTokens(fromTokens: LayoutToken[], toTokens: LayoutToken[]) {
   const exactDiff = diffByKey(fromTokens, toTokens, buildExactKey)
   const contentMatches = matchByExactContent(exactDiff.removed, exactDiff.added)
   const categoryMatches = matchByCategory(contentMatches.stillRemoved, contentMatches.stillAdded)
@@ -219,19 +226,20 @@ export const diffLayoutTokens = (fromTokens: LayoutToken[], toTokens: LayoutToke
   }
 }
 
-export const buildTransitionDiff = (fromScene: Scene, toScene: Scene) =>
-  diffLayoutTokens(flattenSceneTokens(fromScene), flattenSceneTokens(toScene))
+export function buildTransitionDiff(fromScene: Scene, toScene: Scene) {
+  return diffLayoutTokens(flattenSceneTokens(fromScene), flattenSceneTokens(toScene))
+}
 
-export const easeInOutCubic = (progress: number) => {
+export function easeInOutCubic(progress: number) {
   const clamped = Math.min(1, Math.max(0, progress))
   return clamped < 0.5 ? 4 * clamped * clamped * clamped : 1 - (-2 * clamped + 2) ** 3 / 2
 }
 
-export const buildTransitionTokens = (
+export function buildTransitionTokens(
   config: RenderConfig,
   diff: TransitionDiff,
   progress: number
-) => {
+) {
   const clamped = Math.min(1, Math.max(0, progress))
   const tokens: DrawToken[] = []
 
@@ -319,11 +327,11 @@ export const buildTransitionTokens = (
   return tokens
 }
 
-export const renderTransitionTokens = (
+export function renderTransitionTokens(
   config: RenderConfig,
   context: CanvasContext,
   tokens: DrawToken[]
-) => {
+) {
   const textContext = context
   const previousAlpha = textContext.globalAlpha
   const previousBaseline = textContext.textBaseline

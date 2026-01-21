@@ -1,4 +1,4 @@
-export const expandShortHex = (hex: string) => {
+export function expandShortHex(hex: string) {
   if (hex.length === 3) {
     const r = hex.charAt(0)
     const g = hex.charAt(1)
@@ -15,7 +15,7 @@ export const expandShortHex = (hex: string) => {
   return hex
 }
 
-export const parseHexColor = (color: string) => {
+export function parseHexColor(color: string) {
   const normalized = expandShortHex(color.replace("#", "").trim())
   if (normalized.length !== 6 && normalized.length !== 8) {
     return {
@@ -43,10 +43,11 @@ export const parseHexColor = (color: string) => {
   }
 }
 
-export const lerp = (start: number, end: number, progress: number) =>
-  start + (end - start) * progress
+export function lerp(start: number, end: number, progress: number) {
+  return start + (end - start) * progress
+}
 
-export const blendColors = (from: string, to: string, progress: number) => {
+export function blendColors(from: string, to: string, progress: number) {
   const fromColor = parseHexColor(from)
   const toColor = parseHexColor(to)
 

@@ -10,13 +10,13 @@ import {
   renderTransitionTokens,
 } from "./transition"
 
-export const renderFrame = (
+export function renderFrame(
   config: RenderConfig,
   context: CanvasContext,
   frameWidth: number,
   frameHeight: number,
   frame: RenderFrame
-) => {
+) {
   const frameContext = context
   const startTransform = frameContext.getTransform()
   if (typeof frameContext.setTransformMatrix !== "function") {
@@ -73,11 +73,11 @@ export const renderFrame = (
   frameContext.fillStyle = startFillStyle
 }
 
-export const computeFrameCounts = (
+export function computeFrameCounts(
   transitionDurationMs: number,
   fps: number,
   blockDuration: number
-) => {
+) {
   const frameDuration = 1 / fps
   const blockFrames = Math.max(1, Math.round(blockDuration * fps))
   const transitionFrames = Math.max(1, Math.round((transitionDurationMs / 1000) * fps))
@@ -89,8 +89,8 @@ export const computeFrameCounts = (
   }
 }
 
-export const buildSceneFrames = (scene: Scene, blockFrames: number) =>
-  Stream.range(1, blockFrames).pipe(
+export function buildSceneFrames(scene: Scene, blockFrames: number) {
+  return Stream.range(1, blockFrames).pipe(
     Stream.map(
       () =>
         ({
@@ -103,13 +103,14 @@ export const buildSceneFrames = (scene: Scene, blockFrames: number) =>
         }) satisfies RenderFrame
     )
   )
+}
 
-export const buildTransitionFrames = (
+export function buildTransitionFrames(
   config: RenderConfig,
   scene: Scene,
   nextScene: Scene,
   transitionFrames: number
-) => {
+) {
   const diff = buildTransitionDiff(scene, nextScene)
 
   return Stream.range(1, transitionFrames).pipe(
@@ -128,13 +129,13 @@ export const buildTransitionFrames = (
   )
 }
 
-export const buildFramesStream = (
+export function buildFramesStream(
   config: RenderConfig,
   scenes: Scene[],
   blockFrames: number,
   transitionFrames: number
-) =>
-  Stream.fromIterable(scenes).pipe(
+) {
+  return Stream.fromIterable(scenes).pipe(
     Stream.zipWithIndex,
     Stream.flatMap(([scene, index]) => {
       const nextScene = scenes[index + 1]
@@ -144,3 +145,4 @@ export const buildFramesStream = (
         : base
     })
   )
+}

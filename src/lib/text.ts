@@ -1,18 +1,18 @@
 import type { CanvasContext } from "./context"
 import type { RenderConfig } from "./types"
 
-export const buildFont = (config: RenderConfig, isItalic: boolean, isBold: boolean) => {
+export function buildFont(config: RenderConfig, isItalic: boolean, isBold: boolean) {
   const style = `${isItalic ? "italic " : ""}${isBold ? "bold " : ""}`
   return `${style}${config.fontSize}px ${config.fontFamily}`
 }
 
-export const drawUnderline = (
+export function drawUnderline(
   config: RenderConfig,
   context: CanvasContext,
   x: number,
   y: number,
   width: number
-) => {
+) {
   const drawContext = context
   const previousStrokeStyle = drawContext.strokeStyle
   const previousLineWidth = drawContext.lineWidth

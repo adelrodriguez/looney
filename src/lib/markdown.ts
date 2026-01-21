@@ -4,7 +4,7 @@ import { bundledLanguages, type BundledLanguage } from "shiki"
 import type { CodeBlock } from "./types"
 import { MissingCodeBlockLanguage, UnsupportedLanguage } from "./errors.js"
 
-export const normalizeLanguage = (rawLanguage: string) => {
+export function normalizeLanguage(rawLanguage: string) {
   const trimmed = rawLanguage.trim()
   if (!trimmed) {
     return ""
@@ -14,8 +14,9 @@ export const normalizeLanguage = (rawLanguage: string) => {
   return primary.toLowerCase()
 }
 
-const checkIsSupportedLanguage = (language: string): language is BundledLanguage =>
-  Object.hasOwn(bundledLanguages, language)
+function checkIsSupportedLanguage(language: string): language is BundledLanguage {
+  return Object.hasOwn(bundledLanguages, language)
+}
 
 export const parseMarkdownCodeBlocks = Effect.fn(function* parseMarkdownCodeBlocks(
   markdown: string

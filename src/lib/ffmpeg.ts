@@ -19,14 +19,26 @@ const QUALITY_ARGS_BY_FORMAT: Record<FfmpegFormat, readonly string[]> = {
   webm: ["-crf", "20", "-b:v", "0"],
 }
 
+const AUDIO_INPUT_ARGS_BY_FORMAT: Record<FfmpegFormat, readonly string[]> = {
+  mp4: ["-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100"],
+  webm: [],
+}
+
+const AUDIO_OUTPUT_ARGS_BY_FORMAT: Record<FfmpegFormat, readonly string[]> = {
+  mp4: ["-c:a", "aac", "-b:a", "192k", "-shortest"],
+  webm: [],
+}
+
 const CONTAINER_ARGS_BY_FORMAT: Record<FfmpegFormat, readonly string[]> = {
   mp4: ["-movflags", "+faststart"],
   webm: [],
 }
 
-const ensureEven = (value: number) => (value % 2 === 0 ? value : value + 1)
+function ensureEven(value: number) {
+  return value % 2 === 0 ? value : value + 1
+}
 
-export const ensureEvenDimensions = (format: FfmpegFormat, width: number, height: number) => {
+export function ensureEvenDimensions(format: FfmpegFormat, width: number, height: number) {
   if (PIX_FMT_BY_FORMAT[format] !== "yuv420p") {
     return { height, width }
   }
@@ -37,35 +49,39 @@ export const ensureEvenDimensions = (format: FfmpegFormat, width: number, height
   }
 }
 
-const buildArgs = (
+function buildArgs(
   format: FfmpegFormat,
   width: number,
   height: number,
   fps: number,
   inputPath: string,
   outputPath: string
-) => [
-  "-f",
-  "rawvideo",
-  "-pix_fmt",
-  "rgba",
-  "-s",
-  `${width}x${height}`,
-  "-r",
-  `${fps}`,
-  "-i",
-  inputPath,
-  "-vf",
-  "unsharp=5:5:0.5:5:5:0.5",
-  "-c:v",
-  CODEC_BY_FORMAT[format],
-  ...QUALITY_ARGS_BY_FORMAT[format],
-  "-pix_fmt",
-  PIX_FMT_BY_FORMAT[format],
-  ...CONTAINER_ARGS_BY_FORMAT[format],
-  "-y",
-  outputPath,
-]
+) {
+  return [
+    "-f",
+    "rawvideo",
+    "-pix_fmt",
+    "rgba",
+    "-s",
+    `${width}x${height}`,
+    "-r",
+    `${fps}`,
+    "-i",
+    inputPath,
+    ...AUDIO_INPUT_ARGS_BY_FORMAT[format],
+    "-vf",
+    "eq=saturation=1.3,unsharp=5:5:1.0:5:5:1.0,cas=0.5",
+    "-c:v",
+    CODEC_BY_FORMAT[format],
+    ...QUALITY_ARGS_BY_FORMAT[format],
+    "-pix_fmt",
+    PIX_FMT_BY_FORMAT[format],
+    ...AUDIO_OUTPUT_ARGS_BY_FORMAT[format],
+    ...CONTAINER_ARGS_BY_FORMAT[format],
+    "-y",
+    outputPath,
+  ]
+}
 
 const ffmpegCheckCommand = process.platform === "win32" ? "where" : "which"
 
@@ -82,15 +98,15 @@ export const ensureFfmpegAvailable = Effect.fn("ensureFfmpegAvailable")(function
   }
 })
 
-export const startFfmpegProcess = (
+export function startFfmpegProcess(
   format: FfmpegFormat,
   width: number,
   height: number,
   fps: number,
   inputPath: string,
   outputPath: string
-) =>
-  ShellCommand.make(
+) {
+  return ShellCommand.make(
     FFMPEG_BINARY,
     ...buildArgs(format, width, height, fps, inputPath, outputPath)
   ).pipe(
@@ -99,3 +115,4 @@ export const startFfmpegProcess = (
     ShellCommand.stderr("inherit"),
     ShellCommand.start
   )
+}

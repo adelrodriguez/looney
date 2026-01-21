@@ -17,7 +17,7 @@ const SCOPE_TO_CATEGORY: Array<[RegExp, TokenCategory]> = [
   [/^entity\.name\./, "identifier"],
 ]
 
-export const categorizeToken = (scopes: string[]): TokenCategory => {
+export function categorizeToken(scopes: string[]): TokenCategory {
   for (const scope of scopes) {
     if (!scope) {
       continue
